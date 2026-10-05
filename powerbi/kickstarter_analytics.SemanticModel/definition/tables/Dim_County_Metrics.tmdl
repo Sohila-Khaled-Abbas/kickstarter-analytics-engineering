@@ -84,3 +84,5 @@ table Dim_County_Metrics
 				in
 				  Source
 
+	annotation PBI_ResultType = Table
+

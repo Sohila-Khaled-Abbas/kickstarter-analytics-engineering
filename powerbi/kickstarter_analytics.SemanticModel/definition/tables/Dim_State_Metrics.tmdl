@@ -85,3 +85,5 @@ table Dim_State_Metrics
 				in
 				  Source
 
+	annotation PBI_ResultType = Table
+

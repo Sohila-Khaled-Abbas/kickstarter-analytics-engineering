@@ -1,6 +1,6 @@
 expression Staging_Master =
 		let
-		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\MasterKickstarter.csv"), [Delimiter = ",", Columns = 57, QuoteStyle = QuoteStyle.Csv]),
+		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"), [Delimiter = ",", Columns = 57, QuoteStyle = QuoteStyle.Csv]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
 		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"X1", Int64.Type}, {"X1_1", Int64.Type}, {"Country", type text}, {"City", type text}, {"id", Int64.Type}, {"name", type text}, {"blurb", type text}, {"goal", Int64.Type}, {"pledged", type number}, {"status", type text}, {"slug", type text}, {"disable_communication", type logical}, {"currency", type text}, {"currency_symbol", type text}, {"currency_trailing_code", type logical}, {"deadline", type text}, {"state_changed_at", type text}, {"created_at", type text}, {"launched_at", type text}, {"staff_pick", type logical}, {"backers_count", Int64.Type}, {"deadlineTime", Int64.Type}, {"state_changed_atTime", Int64.Type}, {"created_atTime", Int64.Type}, {"launched_atTime", Int64.Type}, {"Categories", type text}, {"spotLight", type logical}, {"pledgedUSD", type number}, {"Ex_USd", type number}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}, {"deadlineY", Int64.Type}, {"state_changed_atY", Int64.Type}, {"created_atY", Int64.Type}, {"launched_atY", Int64.Type}, {"Pledge_per_person", type text}, {"Prct_goal", type number}, {"Length_of_kick", Int64.Type}, {"City_Pop", Int64.Type}, {"Latitude", type number}, {"Longitude", type number}, {"County", type text}, {"State", type text}, {"Backers_as_Prct_of_Pop", type number}, {"Backers_as_Prct_of_Pop_YM", type number}, {"Backers_as_Prct_of_Pop_Y", type number}, {"Days_spent_making_campign", Int64.Type}, {"Days_inception_to_Deadline", Int64.Type}, {"Backers_in_city_Y", Int64.Type}, {"Backers_in_city_YM", Int64.Type}, {"All_Time_Backers_city", Int64.Type}, {"Mean_Pledge_City", type number}, {"Mean_pledge_city_Y", type number}, {"Mean_pledge_city_YM", type number}}, "en-US"),
 		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
@@ -13,7 +13,7 @@ expression Staging_Master =
 
 expression Staging_County =
 		let
-		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\County.csv"), [Delimiter = ",", Columns = 9, QuoteStyle = QuoteStyle.None]),
+		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\County.csv"), [Delimiter = ",", Columns = 9, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
 		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"subregion", type text}, {"region", type text}, {"TotalBackers", Int64.Type}, {"MeanBackers", type number}, {"MedianBackers", type number}, {"MeanUSD", type number}, {"TotalUSD", type number}, {"MedianUSD", type number}}, "en-US"),
 		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
@@ -26,7 +26,7 @@ expression Staging_County =
 
 expression Staging_Mapping =
 		let
-		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\Mapping.csv"), [Delimiter = ",", Columns = 8, QuoteStyle = QuoteStyle.None]),
+		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\Mapping.csv"), [Delimiter = ",", Columns = 8, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
 		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"State", type text}, {"Mean Campaign USD", type number}, {"Projects Per", Int64.Type}, {"Mean Bakers", type number}, {"Total Pledged", Int64.Type}, {"Total Backers", Int64.Type}, {"Mean Days Building", Int64.Type}, {"Median Percent of Goal", type number}}, "en-US")
 		in
@@ -35,4 +35,72 @@ expression Staging_Mapping =
 	queryGroup: Staging
 
 	annotation PBI_ResultType = Table
+
+expression DataFolderPath = "D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = type text]
+	lineageTag: 74af6427-296c-46ca-93de-9c27090f5949
+	queryGroup: Parameters
+
+	annotation PBI_ResultType = Text
+
+expression 'Sample file' =
+		let
+		  Source = Folder.Files("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\kickstarter_projects"),
+		  #"Filtered hidden files" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+		  Navigation = #"Filtered hidden files"{0}[Content]
+		in
+		  Navigation
+	lineageTag: 3a16501e-4aef-4cb7-934d-42cfa5b4f9aa
+	queryGroup: Staging_Projects
+
+expression Parameter =
+		let
+		  Parameter = #"Sample file" meta [IsParameterQuery = true, IsParameterQueryRequired = false, Type = type binary, BinaryIdentifier = #"Sample file"]
+		in
+		  Parameter
+	lineageTag: 2f02e131-28e6-4c29-bc90-8e0a78ce3a28
+	queryGroup: Staging_Projects
+
+expression 'Transform file' =
+		let
+		    Source = (Parameter as binary) => let
+		  Source = Csv.Document(Parameter, [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
+		in
+		  #"Promoted headers"
+		in
+		    Source
+	lineageTag: ecb2ecd9-0d87-4970-801f-b0ba293d5f9e
+	queryGroup: Staging_Projects
+
+	annotation PBI_ResultType = Function
+
+expression kickstarter_projects =
+		let
+		  Source = Folder.Files("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\kickstarter_projects"),
+		  #"Filtered hidden files" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+		  #"Added custom" = let
+		    rootPath = Text.TrimEnd(Value.Metadata(Value.Type(#"Filtered hidden files"))[FileSystemTable.RootPath]?, "\"),
+		    combinePaths = (path1, path2) => Text.Combine({Text.TrimEnd(path1, "\"), path2}, "\"),
+		    getRelativePath = (path, relativeTo) => Text.Middle(path, Text.Length(relativeTo) + 1)
+		in
+		    Table.AddColumn(#"Filtered hidden files", "Relative Path", each getRelativePath(combinePaths([Folder Path], [Name]), rootPath), type text),
+		  #"Invoke custom function" = Table.AddColumn(#"Added custom", "Transform file", each #"Transform file"([Content])),
+		  #"Renamed columns" = Table.RenameColumns(#"Invoke custom function", {{"Relative Path", "Source.Name"}}),
+		  #"Removed other columns" = Table.SelectColumns(#"Renamed columns", {"Source.Name", "Transform file"}),
+		  #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file", Table.ColumnNames(#"Transform file"(#"Sample file"))),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Expanded table column", {{"ID ", Int64.Type}, {"name ", type text}, {"category ", type text}, {"main_category ", type text}, {"currency ", type text}, {"deadline ", type datetime}, {"goal ", Int64.Type}, {"launched ", type datetime}, {"pledged ", type number}, {"state ", type text}, {"backers ", Int64.Type}, {"country ", type text}, {"usd pledged ", type number}, {"", type text}, {"_1", type text}, {"_2", type text}, {"_3", type text}}),
+		  #"Choose columns" = Table.SelectColumns(#"Changed column type", {"ID ", "name ", "category ", "main_category ", "currency ", "deadline ", "goal ", "launched ", "pledged ", "state ", "backers ", "country ", "usd pledged "})
+		in
+		  #"Choose columns"
+	lineageTag: 6ae7b408-3f30-4c17-8cf3-8dc52f1e3782
+	queryGroup: Staging_Projects
+
+expression 'Transform Sample file' =
+		let
+		  Source = Csv.Document(Parameter, [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
+		in
+		  #"Promoted headers"
+	lineageTag: f356a7ba-4fa4-4074-bb35-084bbd7869f2
+	queryGroup: 'Transform file from kickstarter_projects'
 
