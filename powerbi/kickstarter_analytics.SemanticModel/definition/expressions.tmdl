@@ -1,0 +1,38 @@
+expression Staging_Master =
+		let
+		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\MasterKickstarter.csv"), [Delimiter = ",", Columns = 57, QuoteStyle = QuoteStyle.Csv]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"X1", Int64.Type}, {"X1_1", Int64.Type}, {"Country", type text}, {"City", type text}, {"id", Int64.Type}, {"name", type text}, {"blurb", type text}, {"goal", Int64.Type}, {"pledged", type number}, {"status", type text}, {"slug", type text}, {"disable_communication", type logical}, {"currency", type text}, {"currency_symbol", type text}, {"currency_trailing_code", type logical}, {"deadline", type text}, {"state_changed_at", type text}, {"created_at", type text}, {"launched_at", type text}, {"staff_pick", type logical}, {"backers_count", Int64.Type}, {"deadlineTime", Int64.Type}, {"state_changed_atTime", Int64.Type}, {"created_atTime", Int64.Type}, {"launched_atTime", Int64.Type}, {"Categories", type text}, {"spotLight", type logical}, {"pledgedUSD", type number}, {"Ex_USd", type number}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}, {"deadlineY", Int64.Type}, {"state_changed_atY", Int64.Type}, {"created_atY", Int64.Type}, {"launched_atY", Int64.Type}, {"Pledge_per_person", type text}, {"Prct_goal", type number}, {"Length_of_kick", Int64.Type}, {"City_Pop", Int64.Type}, {"Latitude", type number}, {"Longitude", type number}, {"County", type text}, {"State", type text}, {"Backers_as_Prct_of_Pop", type number}, {"Backers_as_Prct_of_Pop_YM", type number}, {"Backers_as_Prct_of_Pop_Y", type number}, {"Days_spent_making_campign", Int64.Type}, {"Days_inception_to_Deadline", Int64.Type}, {"Backers_in_city_Y", Int64.Type}, {"Backers_in_city_YM", Int64.Type}, {"All_Time_Backers_city", Int64.Type}, {"Mean_Pledge_City", type number}, {"Mean_pledge_city_Y", type number}, {"Mean_pledge_city_YM", type number}}, "en-US"),
+		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
+		in
+		  #"Removed columns"
+	lineageTag: 5eddc49f-9893-4353-9a74-63a32a035ab9
+	queryGroup: Staging
+
+	annotation PBI_ResultType = Table
+
+expression Staging_County =
+		let
+		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\County.csv"), [Delimiter = ",", Columns = 9, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"subregion", type text}, {"region", type text}, {"TotalBackers", Int64.Type}, {"MeanBackers", type number}, {"MedianBackers", type number}, {"MeanUSD", type number}, {"TotalUSD", type number}, {"MedianUSD", type number}}, "en-US"),
+		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
+		in
+		  #"Removed columns"
+	lineageTag: 5c4769c1-af16-4dee-bb67-553337ee5568
+	queryGroup: Staging
+
+	annotation PBI_ResultType = Table
+
+expression Staging_Mapping =
+		let
+		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\master_kickstarter\Mapping.csv"), [Delimiter = ",", Columns = 8, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"State", type text}, {"Mean Campaign USD", type number}, {"Projects Per", Int64.Type}, {"Mean Bakers", type number}, {"Total Pledged", Int64.Type}, {"Total Backers", Int64.Type}, {"Mean Days Building", Int64.Type}, {"Median Percent of Goal", type number}}, "en-US")
+		in
+		  #"Changed column type"
+	lineageTag: 564fef24-df8e-4137-880b-f8d4db35a2be
+	queryGroup: Staging
+
+	annotation PBI_ResultType = Table
+

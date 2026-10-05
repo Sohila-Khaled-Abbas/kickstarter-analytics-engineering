@@ -1,0 +1,86 @@
+table Dim_County_Metrics
+	lineageTag: b5b666b1-09fc-4805-9559-756c31cf00ec
+
+	column State
+		dataType: string
+		lineageTag: 6fe0a346-f4f2-411c-98ce-39daeea7772e
+		summarizeBy: none
+		sourceColumn: State
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mean Campaign USD'
+		dataType: double
+		lineageTag: fdc1b541-981c-4db1-80a8-60bf1474ac45
+		summarizeBy: sum
+		sourceColumn: Mean Campaign USD
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Projects Per'
+		dataType: int64
+		formatString: 0
+		lineageTag: 4e4fe6b2-3640-4a89-98b6-c712f0eca08c
+		summarizeBy: sum
+		sourceColumn: Projects Per
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mean Bakers'
+		dataType: double
+		lineageTag: 050d01a8-a52f-401c-b558-9760ae23a944
+		summarizeBy: sum
+		sourceColumn: Mean Bakers
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Total Pledged'
+		dataType: int64
+		formatString: 0
+		lineageTag: 5d71a097-9a57-403e-8b09-cdb11356b0d8
+		summarizeBy: sum
+		sourceColumn: Total Pledged
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Backers'
+		dataType: int64
+		formatString: 0
+		lineageTag: b289baf5-ccaf-4df6-b576-1a1ea95652ea
+		summarizeBy: sum
+		sourceColumn: Total Backers
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mean Days Building'
+		dataType: int64
+		formatString: 0
+		lineageTag: d3108fbd-ce9e-4453-a5c2-d3d32d870be5
+		summarizeBy: sum
+		sourceColumn: Mean Days Building
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Median Percent of Goal'
+		dataType: double
+		lineageTag: b302abc0-a6f8-4d43-90fd-ac8d72e01b1e
+		summarizeBy: sum
+		sourceColumn: Median Percent of Goal
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition Dim_County_Metrics = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				  Source = Staging_Mapping
+				in
+				  Source
+

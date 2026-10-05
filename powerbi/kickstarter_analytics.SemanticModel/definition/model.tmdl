@@ -7,9 +7,22 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
+queryGroup Staging
+
+	annotation PBI_QueryGroupOrder = 0
+
+queryGroup Dimensions
+
+	annotation PBI_QueryGroupOrder = 1
+
 annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
+
+annotation PBI_QueryOrder = ["Staging_Master","Staging_County","Staging_Mapping","Dim_State_Metrics","Dim_County_Metrics"]
+
+ref table Dim_State_Metrics
+ref table Dim_County_Metrics
 
 ref cultureInfo en-US
 
