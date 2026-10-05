@@ -1,0 +1,48 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# ========================================
+# Power BI (Developer Mode / PBIP)
+# ========================================
+# Ignore standard binary files since we use PBIP
+*.pbix
+*.pbit
+
+# Ignore local user settings and cache for PBIP
+.pbi/localSettings.json
+*.pbicache
+
+# ========================================
+# Data - CRITICAL
+# ========================================
+# Never commit large datasets to GitHub!
+data/
+*.csv
+*.json
+*.json.gz
+*.zip
+*.parquet
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

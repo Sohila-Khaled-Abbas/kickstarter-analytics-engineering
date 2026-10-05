@@ -1,0 +1,3 @@
+https://webrobots.io/kickstarter-datasets/
+https://www.kaggle.com/wood2174/mapkickstarter#MasterKickstarter.csv
+https://www.kaggle.com/datasets/kemical/kickstarter-projects
