@@ -17,25 +17,13 @@ queryGroup Dimensions
 
 queryGroup Parameters
 
-	annotation PBI_QueryGroupOrder = 2
-
-queryGroup 'Transform file from kickstarter_projects'
-
-	annotation PBI_QueryGroupOrder = 3
-
-queryGroup 'Transform file from kickstarter_projects\Helper queries'
-
 	annotation PBI_QueryGroupOrder = 0
-
-queryGroup Staging_Projects
-
-	annotation PBI_QueryGroupOrder = 2
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["Staging_Master","Staging_County","Staging_Mapping","Sample file","Parameter","Transform file","kickstarter_projects","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath","Transform Sample file"]
+annotation PBI_QueryOrder = ["Staging_Master","Staging_County","Staging_Mapping","Staging_Kaggle_2016","Staging_Kaggle_2018","WebRobots_Enrichment_Master","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath"]
 
 ref table Dim_State_Metrics
 ref table Dim_County_Metrics

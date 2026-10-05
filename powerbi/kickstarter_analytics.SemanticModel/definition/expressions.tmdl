@@ -42,65 +42,33 @@ expression DataFolderPath = "D:\courses\Data Analysis 26-27\Projects\Kickstarter
 
 	annotation PBI_ResultType = Text
 
-expression 'Sample file' =
+expression Staging_Kaggle_2016 =
 		let
-		  Source = Folder.Files("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\kickstarter_projects"),
-		  #"Filtered hidden files" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
-		  Navigation = #"Filtered hidden files"{0}[Content]
+		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"), [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"ID ", Int64.Type}, {"name ", type text}, {"category ", type text}, {"main_category ", type text}, {"currency ", type text}, {"deadline ", type datetime}, {"goal ", Int64.Type}, {"launched ", type datetime}, {"pledged ", type number}, {"state ", type text}, {"backers ", Int64.Type}, {"country ", type text}, {"usd pledged ", type number}, {"", type text}, {"_1", type text}, {"_2", type text}, {"_3", type text}}, "en-US")
 		in
-		  Navigation
-	lineageTag: 3a16501e-4aef-4cb7-934d-42cfa5b4f9aa
-	queryGroup: Staging_Projects
+		  #"Changed column type"
+	lineageTag: 8b56fe35-b71b-40ec-a63a-1c1a5bcf9e28
+	queryGroup: Staging
 
-expression Parameter =
+expression Staging_Kaggle_2018 =
 		let
-		  Parameter = #"Sample file" meta [IsParameterQuery = true, IsParameterQueryRequired = false, Type = type binary, BinaryIdentifier = #"Sample file"]
+		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201801.csv"), [Delimiter = ",", Columns = 15, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"ID", Int64.Type}, {"name", type text}, {"category", type text}, {"main_category", type text}, {"currency", type text}, {"deadline", type date}, {"goal", Int64.Type}, {"launched", type datetime}, {"pledged", type number}, {"state", type text}, {"backers", Int64.Type}, {"country", type text}, {"usd pledged", type number}, {"usd_pledged_real", type number}, {"usd_goal_real", type number}}, "en-US")
 		in
-		  Parameter
-	lineageTag: 2f02e131-28e6-4c29-bc90-8e0a78ce3a28
-	queryGroup: Staging_Projects
+		  #"Changed column type"
+	lineageTag: 2e36497a-7bea-4814-aee1-df6cb8b9670d
+	queryGroup: Staging
 
-expression 'Transform file' =
+expression WebRobots_Enrichment_Master =
 		let
-		    Source = (Parameter as binary) => let
-		  Source = Csv.Document(Parameter, [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
+		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\WebRobots_Enrichment_Master.csv"), [Delimiter = ",", Columns = 12, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
+		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"project_id", Int64.Type}, {"name", type text}, {"state", type text}, {"category_name", type text}, {"subcategory_name", type text}, {"country", type text}, {"launched_at", type datetime}, {"deadline_at", type datetime}, {"goal_usd", type number}, {"pledged_usd", type number}, {"backers_count", Int64.Type}, {"Source_Family", type text}}, "en-US")
 		in
-		  #"Promoted headers"
-		in
-		    Source
-	lineageTag: ecb2ecd9-0d87-4970-801f-b0ba293d5f9e
-	queryGroup: Staging_Projects
-
-	annotation PBI_ResultType = Function
-
-expression kickstarter_projects =
-		let
-		  Source = Folder.Files("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\kickstarter_projects"),
-		  #"Filtered hidden files" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
-		  #"Added custom" = let
-		    rootPath = Text.TrimEnd(Value.Metadata(Value.Type(#"Filtered hidden files"))[FileSystemTable.RootPath]?, "\"),
-		    combinePaths = (path1, path2) => Text.Combine({Text.TrimEnd(path1, "\"), path2}, "\"),
-		    getRelativePath = (path, relativeTo) => Text.Middle(path, Text.Length(relativeTo) + 1)
-		in
-		    Table.AddColumn(#"Filtered hidden files", "Relative Path", each getRelativePath(combinePaths([Folder Path], [Name]), rootPath), type text),
-		  #"Invoke custom function" = Table.AddColumn(#"Added custom", "Transform file", each #"Transform file"([Content])),
-		  #"Renamed columns" = Table.RenameColumns(#"Invoke custom function", {{"Relative Path", "Source.Name"}}),
-		  #"Removed other columns" = Table.SelectColumns(#"Renamed columns", {"Source.Name", "Transform file"}),
-		  #"Expanded table column" = Table.ExpandTableColumn(#"Removed other columns", "Transform file", Table.ColumnNames(#"Transform file"(#"Sample file"))),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Expanded table column", {{"ID ", Int64.Type}, {"name ", type text}, {"category ", type text}, {"main_category ", type text}, {"currency ", type text}, {"deadline ", type datetime}, {"goal ", Int64.Type}, {"launched ", type datetime}, {"pledged ", type number}, {"state ", type text}, {"backers ", Int64.Type}, {"country ", type text}, {"usd pledged ", type number}, {"", type text}, {"_1", type text}, {"_2", type text}, {"_3", type text}}),
-		  #"Choose columns" = Table.SelectColumns(#"Changed column type", {"ID ", "name ", "category ", "main_category ", "currency ", "deadline ", "goal ", "launched ", "pledged ", "state ", "backers ", "country ", "usd pledged "})
-		in
-		  #"Choose columns"
-	lineageTag: 6ae7b408-3f30-4c17-8cf3-8dc52f1e3782
-	queryGroup: Staging_Projects
-
-expression 'Transform Sample file' =
-		let
-		  Source = Csv.Document(Parameter, [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
-		in
-		  #"Promoted headers"
-	lineageTag: f356a7ba-4fa4-4074-bb35-084bbd7869f2
-	queryGroup: 'Transform file from kickstarter_projects'
+		  #"Changed column type"
+	lineageTag: 9236ffe7-2ed4-40e2-9973-a3a49d9f586c
+	queryGroup: Staging
 
