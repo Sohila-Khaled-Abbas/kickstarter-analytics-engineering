@@ -1,10 +1,9 @@
 # Kickstarter Analytics: Advanced Power Query (M) Playbook
 
-As an Analytics Engineer, building a robust data pipeline directly inside Power BI requires mastering both the Power Query Graphical User Interface (GUI) and the underlying M language.
+As an Analytics Engineer and Senior Power BI Developer, building a robust data pipeline directly inside Power BI requires mastering the Power Query Graphical User Interface (GUI), the underlying M language, and the VertiPaq engine's memory management.
 
-Because we are dealing with three distinct source families with massive temporal overlaps, standard point-and-click transformations will not be enough. This guide walks you step-by-step through staging, harmonizing, deduplicating, and modeling your data using Advanced Power Query techniques.
+Because we are dealing with three distinct source families with massive temporal overlaps (Kaggle snapshots vs. WebRobots continuous crawls), standard point-and-click transformations will not be enough. This guide walks you step-by-step through staging, harmonizing, deduplicating, and modeling your data.
 
-```
                     KICKSTARTER ANALYTICS
                             │
         ┌───────────────────┼───────────────────┐
@@ -18,88 +17,101 @@ Because we are dealing with three distinct source families with massive temporal
    snapshot +          snapshots             crawls
  mapping tables 
 
-```
+---
+
+## 🛠️ Pre-Requisite: Parameterize Your Data Source
+*Senior Pro-Tip:* Hardcoding local file paths (`C:\Users\...`) is a bad practice. When you publish or share this `.pbip`, it will break.
+1. In Power Query, click **Manage Parameters -> New Parameter**.
+2. Name: `DataFolderPath`. Type: `Text`.
+3. Current Value: `D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\`
+*Use this parameter instead of hardcoding the path in your Folder and CSV connectors!*
+
+---
 
 ## Phase 1: Data Ingestion & Staging (GUI + M Code)
 
-Our first goal is to create a "Staging" query for each of the three families. These queries load and pre-clean the raw data. **Do not load these directly to the report; we will disable their load later.**
+Create a "Staging" query for each of the three families to load and pre-clean the raw data. **Do not load these directly to the report; right-click each and disable "Enable Load".**
 
 ### 1. Staging_Master & Auxiliary Tables (Historical Snapshot)
 
 * **GUI Steps for Master:**
-  1. Click **Get Data -> Text/CSV** and load `data/raw/master_kickstarter/MasterKickstarter.csv`. Name it `Staging_Master`.
+  1. Click **Get Data -> Text/CSV** and load `raw/master_kickstarter/MasterKickstarter.csv`. Name it `Staging_Master`.
 
 * **Handling Mapping.csv (State Aggregations):**
-  1. Click **Get Data -> Text/CSV** and load `Mapping.csv`. Name it `Dim_State_Metrics`.
-  2. **CRITICAL:** Because this file contains pre-aggregated data (`Mean Campaign USD`, `Projects Per`, etc.), it has a different **granularity** than your campaign-level data. Keep this as a separate table.
+  1. Load `Mapping.csv`. Name it `Dim_State_Metrics`.
+  2. **CRITICAL:** This file contains pre-aggregated data (`Mean Campaign USD`, `Projects Per`, etc.). Do not merge this with campaign data. Keep it as a standalone lookup table.
 
 * **Handling County.csv (Subregion Aggregations):**
-  1. Click **Get Data -> Text/CSV** and load `County.csv`. Name it `Dim_County_Metrics`.
-  2. **CRITICAL:** Just like the Mapping file, this contains pre-aggregated metrics (`TotalBackers`, `MeanUSD`, etc.). Do *not* merge this into `Staging_Master`. We will link this in the Data Model view later.
+  1. Load `County.csv`. Name it `Dim_County_Metrics`.
+  2. **CRITICAL:** Just like the Mapping file, this contains pre-aggregated metrics (`TotalBackers`, `MeanUSD`, etc.). Do *not* merge this into `Staging_Master`. 
 
-### 2. Staging_KaggleProjects (Historical Snapshots)
+### 2. Staging_KaggleProjects (2016 & 2018 Snapshots)
 
-These are standard, mostly clean point-in-time CSVs.
+This folder contains `ks-projects-201612.csv` and `ks-projects-201801.csv`. A campaign active in 2016 will *also* appear in the 2018 file, creating duplicates. 
 
 * **GUI Steps:**
-  1. Click **Get Data -> Folder**. Browse to `data/raw/kickstarter_projects/`.
-  2. Click **Combine & Transform Data**. Power BI automatically generates a helper function to stack the files.
-  3. Name the resulting query `Staging_KaggleProjects`.
-  4. Remove any automatically generated columns you don't need (like `Source.Name`).
+  1. Click **Get Data -> Folder**. Browse to `raw/kickstarter_projects/`.
+  2. Click **Combine & Transform Data**. Power BI stacks them.
+  3. Name the query `Staging_KaggleProjects`.
+  4. **Data Quality Fix:** The Kaggle 2018 file contains columns like `pledged` (local currency) and `usd_pledged_real` (Fixer.io converted API currency). **Always keep the `_real` columns** for accurate cross-country analytics. Delete the raw local currency columns to save memory.
 
 ### 3. Staging_WebRobots (Recurring JSON/CSV Crawls)
 
 This is the messy, massive recurring data with embedded JSON arrays.
 
 * **GUI Steps:**
-  1. Click **Get Data -> Folder**. Browse to `data/raw/webrobots/`.
+  1. Click **Get Data -> Folder**. Browse to `raw/webrobots/`.
   2. Click **Combine & Transform Data**. Name the query `Staging_WebRobots`.
-  3. **The JSON Challenge:** Find the `category` column. Right-click -> **Transform -> JSON**. Extract `name` (Subcategory) and `slug` (Parent Category).
+  3. **Performance Tip:** Immediately remove all columns you don't need (e.g., `creator`, `photo`, `urls`) *before* doing any JSON parsing. This saves immense RAM.
 
-* **Senior BI Pro-Tip:** The GUI can sometimes struggle with millions of rows of JSON parsing. Use this custom M code in the Advanced Editor to parse safely:
+* **The JSON Challenge (Advanced Editor):**
+  Use this custom M code to parse the `category` and `location` columns safely:
 
-  ```
+  ```powerquery
   // Safely parse Category JSON
   ParsedCategory = Table.AddColumn(PreviousStep, "Category_Parsed", each try Json.Document([category]) otherwise null),
   ExpandedCategory = Table.ExpandRecordColumn(ParsedCategory, "Category_Parsed", {"name", "slug"}, {"subcategory_name", "category_slug"}),
   
-  // Safely parse Location JSON
+  // Safely parse Location JSON (To match our County.csv geographical depth)
   ParsedLocation = Table.AddColumn(ExpandedCategory, "Location_Parsed", each try Json.Document([location]) otherwise null),
   ExpandedLocation = Table.ExpandRecordColumn(ParsedLocation, "Location_Parsed", {"country", "state", "displayable_name"}, {"country", "geo_state", "city_subregion"})
   ```
 
+---
+
 ## Phase 2: Schema Harmonization
 
-Before appending, the columns in all three staging queries must match *perfectly* (case-sensitive names and data types).
+Before appending, the columns in all three staging queries must match *perfectly*. Power Query append is case-sensitive!
 
-1. **Add Lineage:** Go to **Add Column -> Custom Column**. Name it `Source_Family`. Enter `"MasterKickstarter"`, `"KaggleProjects"`, or `"WebRobots"` respectively.
+1. **Add Lineage Column:** Go to **Add Column -> Custom Column**. Name it `Source_Family`. Enter `"MasterKickstarter"`, `"KaggleProjects"`, or `"WebRobots"`.
+2. **Standardize Naming:** 
+   * Rename Kaggle's `usd_pledged_real` -> `pledged_usd`.
+   * Rename Kaggle's `usd_goal_real` -> `goal_usd`.
+   * Rename Kaggle's `main_category` -> `category_name`.
+   * Rename WebRobots' `id` -> `project_id`.
+3. **Strict Data Types:** Select all columns (`Ctrl+A`) and click **Detect Data Type**. Ensure `launched_at` is Date/Time, and financial columns are Fixed Decimal Number (Currency).
 
-2. **Standardize Column Names:** Ensure core columns align: `project_id`, `name`, `status`/`state`, `launched_at`, `deadline_at`, `pledged_usd`, `goal_usd`, `category_name`, `country`, `geo_state`, `city_subregion`.
-
-3. **Data Types:** Ensure `launched_at` and `deadline_at` are set to **Date/Time**, and `pledged_usd` is a **Decimal Number**.
+---
 
 ## Phase 3: Integration & Append
 
 Now we stack the families into a single, massive table.
 
-1. **GUI Steps:**
-   * On the Home tab, click **Append Queries -> Append Queries as New**.
-   * Select **Three or more tables**.
-   * Add `Staging_Master`, `Staging_KaggleProjects`, and `Staging_WebRobots`.
-   * Name this new query `Fact_Campaigns_Raw`.
+1. On the Home tab, click **Append Queries -> Append Queries as New**.
+2. Select **Three or more tables**. Add all three Staging queries.
+3. Name this new query `Fact_Campaigns_Raw`.
 
-2. **Memory Management (CRITICAL):**
-   * Right-click `Staging_Master`, `Staging_KaggleProjects`, and `Staging_WebRobots` and **uncheck "Enable Load"**. (Leave your two `Dim` metric tables enabled).
+---
 
 ## Phase 4: Advanced Deduplication (`Table.Buffer`)
 
-Because WebRobots crawls the same campaigns monthly, and Kaggle overlaps with WebRobots, you have massive row duplication. You *must* get the absolute latest state of the campaign.
+Power Query uses "Lazy Evaluation." If you just sort by date and click "Remove Duplicates," the Mashup Engine often ignores the sort order to save time, resulting in random, outdated records being kept. You *must* buffer the table in memory to force it to respect the sort order.
 
 * **M Code (Advanced Editor):**
-  Open the Advanced Editor for `Fact_Campaigns_Raw` and add this exact logic to the end:
+  Open the Advanced Editor for `Fact_Campaigns_Raw` and replace the final steps with this logic:
 
-  ```
-      // 1. Sort Descending by Date and Source Family
+  ```powerquery
+      // 1. Sort Descending by Date (Keep newest) and Source (Prefer WebRobots over Kaggle)
       SortedRows = Table.Sort(PreviousStepName,{{"launched_at", Order.Descending}, {"Source_Family", Order.Descending}}),
   
       // 2. Buffer the table in memory to FORCE the engine to respect the sort order.
@@ -111,33 +123,43 @@ Because WebRobots crawls the same campaigns monthly, and Kaggle overlaps with We
       Deduplicated
   ```
 
+---
+
 ## Phase 5: Dimensional Modeling (Star Schema)
 
-Do not load a 50-column flat table into your report. VertiPaq thrives on narrow Fact tables and distinct Dimension tables.
+VertiPaq thrives on narrow Fact tables (numbers/dates) and distinct Dimension tables (text). 
 
-### 1. Create `Dim_Category`
-1. Right-click `Fact_Campaigns_Raw` -> **Reference**. Name it `Dim_Category`.
-2. Select *only* `category_name` and `subcategory_name`. **Remove Other Columns**.
-3. **Remove Duplicates** and add an **Index Column** named `category_id`.
+### 1. Dimensions (Reference `Fact_Campaigns_Raw` to create these)
+* **`Dim_Category`:** Keep `category_name`, `subcategory_name`. Remove Duplicates. Add Index `category_id`.
+* **`Dim_Location`:** Keep `country`, `geo_state`, `city_subregion`. Remove Duplicates. Add Index `location_id`.
 
-### 2. Create `Dim_Location`
-1. Right-click `Fact_Campaigns_Raw` -> **Reference**. Name it `Dim_Location`.
-2. Select your geographic columns (`country`, `geo_state`, `city_subregion`). **Remove Other Columns**.
-3. **Remove Duplicates** and add an **Index Column** named `location_id`.
+### 2. The Final Fact Table
+1. Reference `Fact_Campaigns_Raw`. Name it `Fact_Campaigns`.
+2. Merge with `Dim_Category` and `Dim_Location` to bring in `category_id` and `location_id`.
+3. **CRITICAL:** Delete all heavy text columns (`category_name`, `country`, `name`, etc.) from the Fact table. Only keep IDs, Dates, and numeric metrics.
 
-### 3. Finalize `Fact_Campaigns`
-1. Right-click `Fact_Campaigns_Raw` -> **Reference**. Name it `Fact_Campaigns`.
-2. **Home -> Merge Queries**. Merge with `Dim_Category` and `Dim_Location` to extract `category_id` and `location_id`.
-3. Delete the heavy text columns (`category_name`, `country`, `geo_state`, `city_subregion`) from the Fact table.
-4. Right-click `Fact_Campaigns_Raw` and **uncheck "Enable Load"**.
+### 3. Build a Date Dimension (M-Code)
+You need a proper Date table for time-intelligence DAX. Create a Blank Query and paste this standard script:
+```powerquery
+= List.Dates(#date(2009,1,1), Duration.Days(DateTime.Date(DateTime.LocalNow()) - #date(2009,1,1)), #duration(1,0,0,0))
+// Convert to table, change type to Date, and extract Year, Month Name, Month Number, etc.
+```
+Name it `Dim_Date`.
 
-## Phase 6: The Model View (Snowflaking)
+---
 
-When you click **Close & Apply**, go to the Model View in Power BI. You will build a powerful "Snowflake" schema using your two aggregated Kaggle files:
+## Phase 6: The Semantic Model View (Best Practices)
 
-1. Link `Dim_Category[category_id]` -> `Fact_Campaigns[category_id]` (1 to Many).
-2. Link `Dim_Location[location_id]` -> `Fact_Campaigns[location_id]` (1 to Many).
-3. **The State Mapping connection:** Link `Dim_State_Metrics[State]` -> `Dim_Location[geo_state]` (1 to Many).
-4. **The County connection:** Link `Dim_County_Metrics[subregion]` -> `Dim_Location[city_subregion]` (1 to Many).
+Click **Close & Apply**. In the Power BI Model View, build your Snowflake schema:
 
-By linking these pre-aggregated tables to your `Dim_Location` instead of forcing them into the Fact table, you maintain perfect mathematical accuracy and save massive amounts of memory!
+1. **Core Relationships:**
+   * `Dim_Category[category_id]` -1:M-> `Fact_Campaigns[category_id]`
+   * `Dim_Location[location_id]` -1:M-> `Fact_Campaigns[location_id]`
+   * `Dim_Date[Date]` -1:M-> `Fact_Campaigns[launched_at]`
+2. **Snowflake the Metrics:**
+   * Link `Dim_State_Metrics[State]` -1:M-> `Dim_Location[geo_state]` 
+   * Link `Dim_County_Metrics[subregion]` -1:M-> `Dim_Location[city_subregion]`
+3. **UI / UX Polish:**
+   * Select all `_id` columns (like `category_id`) across all tables. In the properties pane, turn on **Is Hidden**. End-users should filter by names, not ID numbers.
+   * Format `pledged_usd` and `goal_usd` as Currency ($) with 0 decimal places.
+   * Set `backers_count` summarization to Sum, and `project_id` summarization to "Count Distinct".
