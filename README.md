@@ -36,7 +36,7 @@
 
 ---
 
-## ` 1. Project Overview
+## 1. Project Overview
 
 This project is an **Analytics Engineering + Power BI** implementation for studying Kickstarter campaigns across multiple historical and recurring data sources.
 
@@ -56,7 +56,7 @@ The raw datasets are intentionally **not committed to Git**. The repository cont
 
 ---
 
-## ` 2. Why This Project Is an Analytics Engineering Project
+## 2. Why This Project Is an Analytics Engineering Project
 
 The project focuses on the problems that appear when analytical data comes from heterogeneous sources:
 
@@ -72,7 +72,7 @@ The resulting architecture separates the **observation of a campaign** from the 
 
 ---
 
-## ` 3. Architecture
+## 3. Architecture
 
 ### End-to-end data flow
 
@@ -145,7 +145,7 @@ This prevents historical observations from being destroyed simply because the re
 
 ---
 
-## ` 4. Data Engineering Lifecycle
+## 4. Data Engineering Lifecycle
 
 ### 1. Discovery
 
@@ -223,7 +223,7 @@ The exact rule should be documented in the transformation layer rather than hidd
 
 ---
 
-## ` 5. Source Inventory
+## 5. Source Inventory
 
 ### MasterKickstarter
 
@@ -276,7 +276,7 @@ These source characteristics are treated as **engineering constraints**, not as 
 
 ---
 
-## ` 6. Repository Structure
+## 6. Repository Structure
 
 The repository currently follows this layout:
 
@@ -349,7 +349,7 @@ The exact local path is configurable in the Python scripts.
 
 ---
 
-## ` 7. Source-to-Model Design
+## 7. Source-to-Model Design
 
 ### Bronze
 
@@ -406,7 +406,7 @@ Dim_Campaign
 
 ---
 
-## ` 8. Power BI Semantic Model
+## 8. Power BI Semantic Model
 
 ### Target star-schema design
 
@@ -468,7 +468,7 @@ The current-state fact can then answer:
 
 ---
 
-## ` 9. Power BI Project & Git Strategy
+## 9. Power BI Project & Git Strategy
 
 This repository uses **Power BI Project (`.pbip`)** rather than relying exclusively on a monolithic `.pbix` file.
 
@@ -508,7 +508,7 @@ through normal Git workflows.
 
 ---
 
-## ` 10. Core Analytics
+## 10. Core Analytics
 
 The semantic layer is intended to support measures such as:
 
@@ -576,7 +576,7 @@ To move beyond descriptive reporting, the project can derive:
 
 ---
 
-## ` 11. Data Quality Framework
+## 11. Data Quality Framework
 
 The next-generation quality layer should validate the data **before** it becomes a report.
 
@@ -615,7 +615,7 @@ The correct response to a data-quality problem is usually to **flag and investig
 
 ---
 
-## ` 12. Deduplication Strategy
+## 12. Deduplication Strategy
 
 The project distinguishes **file-level duplication** from **campaign-level duplication**.
 
@@ -653,7 +653,7 @@ A campaign's internal update timestamp describes the campaign; a source snapshot
 
 ---
 
-## ` 13. Running the Pipeline
+## 13. Running the Pipeline
 
 ### Prerequisites
 
@@ -752,7 +752,7 @@ The repository currently contains PBIP/TMDL/PBIR scaffolding; the detailed analy
 
 ---
 
-## ` 14. Power Query Design
+## 14. Power Query Design
 
 The intended Power Query organization is:
 
@@ -795,7 +795,7 @@ The Power Query layer should own source-specific parsing and standardization. Th
 
 ---
 
-## ` 15. Analytical Questions
+## 15. Analytical Questions
 
 The report is designed around questions rather than a collection of unrelated charts.
 
@@ -831,7 +831,7 @@ The report is designed around questions rather than a collection of unrelated ch
 
 ---
 
-## ` 16. Suggested Report Pages
+## 16. Suggested Report Pages
 
 ```text
 01 — Executive Overview
@@ -887,7 +887,7 @@ Source conflicts
 
 ---
 
-## ` 17. Roadmap
+## 17. Roadmap
 
 - [x] Establish repository structure
 - [x] Add source references
@@ -912,7 +912,7 @@ Source conflicts
 
 ---
 
-## ` 18. Documentation Map
+## 18. Documentation Map
 
 | Document | Purpose |
 |---|---|
@@ -924,7 +924,7 @@ Source conflicts
 
 ---
 
-## ` 19. GitHub Markdown Features Used
+## 19. GitHub Markdown Features Used
 
 This README intentionally uses features supported by GitHub's current Markdown renderer:
 
@@ -971,7 +971,7 @@ The goal is to improve navigation and readability without turning the README int
 
 ---
 
-## ` 20. Engineering Principles
+## 20. Engineering Principles
 
 ### Reproducibility
 
@@ -999,7 +999,7 @@ Prefer modular Python utilities, reusable Power Query functions, documented mapp
 
 ---
 
-## ` 21. Data Governance & Reproducibility
+## 21. Data Governance & Reproducibility
 
 Raw datasets are excluded from this repository because the project is designed to keep **source data separate from source code and analytical definitions**.
 
@@ -1027,7 +1027,7 @@ Before redistributing any source datasets, review the terms and licensing condit
 
 ---
 
-## ` 22. Known Implementation Notes
+## 22. Known Implementation Notes
 
 This repository is actively evolving. A few implementation details are intentionally documented rather than hidden:
 
@@ -1041,7 +1041,7 @@ Documenting these constraints makes the repository more reproducible and easier 
 
 ---
 
-## ` 23. Useful External Documentation
+## 23. Useful External Documentation
 
 | Topic | Reference |
 |---|---|
@@ -1058,7 +1058,7 @@ Documenting these constraints makes the repository more reproducible and easier 
 
 ---
 
-## ` 24. Acknowledgements
+## 24. Acknowledgements
 
 Data sources:
 
