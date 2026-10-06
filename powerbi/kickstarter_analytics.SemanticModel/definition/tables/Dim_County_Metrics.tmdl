@@ -77,10 +77,10 @@ table Dim_County_Metrics
 
 	partition Dim_County_Metrics = m
 		mode: import
-		queryGroup: Dimensions
+		queryGroup: 04_Dimensions
 		source =
 				let
-				  Source = Staging_Mapping
+				  Source = Src_Mapping
 				in
 				  Source
 

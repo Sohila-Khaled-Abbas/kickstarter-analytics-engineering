@@ -7,23 +7,31 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-queryGroup Staging
+queryGroup 01_Sources
 
 	annotation PBI_QueryGroupOrder = 1
 
-queryGroup Dimensions
+queryGroup 04_Dimensions
 
-	annotation PBI_QueryGroupOrder = 3
+	annotation PBI_QueryGroupOrder = 4
 
-queryGroup Parameters
+queryGroup 00_Parameters
 
 	annotation PBI_QueryGroupOrder = 0
+
+queryGroup 02_Staging
+
+	annotation PBI_QueryGroupOrder = 2
+
+queryGroup 03_Conformed
+
+	annotation PBI_QueryGroupOrder = 4
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["Staging_Master","Staging_County","Staging_Mapping","Staging_Kaggle_2016","Staging_Kaggle_2018","WebRobots_Enrichment_Master","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath"]
+annotation PBI_QueryOrder = ["Src_Master","Src_County","Src_Mapping","Src_Kaggle_2016","Src_Kaggle_2018","Src_WebRobots_Latest","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath","Stg_Kaggle_2016","Stg_Kaggle_2018","Stg_Master","Stg_WebRobots"]
 
 ref table Dim_State_Metrics
 ref table Dim_County_Metrics

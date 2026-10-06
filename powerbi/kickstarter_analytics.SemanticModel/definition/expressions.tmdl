@@ -1,17 +1,16 @@
-expression Staging_Master =
+expression Src_Master =
 		let
 		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"), [Delimiter = ",", Columns = 57, QuoteStyle = QuoteStyle.Csv]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"X1", Int64.Type}, {"X1_1", Int64.Type}, {"Country", type text}, {"City", type text}, {"id", Int64.Type}, {"name", type text}, {"blurb", type text}, {"goal", Int64.Type}, {"pledged", type number}, {"status", type text}, {"slug", type text}, {"disable_communication", type logical}, {"currency", type text}, {"currency_symbol", type text}, {"currency_trailing_code", type logical}, {"deadline", type text}, {"state_changed_at", type text}, {"created_at", type text}, {"launched_at", type text}, {"staff_pick", type logical}, {"backers_count", Int64.Type}, {"deadlineTime", Int64.Type}, {"state_changed_atTime", Int64.Type}, {"created_atTime", Int64.Type}, {"launched_atTime", Int64.Type}, {"Categories", type text}, {"spotLight", type logical}, {"pledgedUSD", type number}, {"Ex_USd", type number}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}, {"deadlineY", Int64.Type}, {"state_changed_atY", Int64.Type}, {"created_atY", Int64.Type}, {"launched_atY", Int64.Type}, {"Pledge_per_person", type text}, {"Prct_goal", type number}, {"Length_of_kick", Int64.Type}, {"City_Pop", Int64.Type}, {"Latitude", type number}, {"Longitude", type number}, {"County", type text}, {"State", type text}, {"Backers_as_Prct_of_Pop", type number}, {"Backers_as_Prct_of_Pop_YM", type number}, {"Backers_as_Prct_of_Pop_Y", type number}, {"Days_spent_making_campign", Int64.Type}, {"Days_inception_to_Deadline", Int64.Type}, {"Backers_in_city_Y", Int64.Type}, {"Backers_in_city_YM", Int64.Type}, {"All_Time_Backers_city", Int64.Type}, {"Mean_Pledge_City", type number}, {"Mean_pledge_city_Y", type number}, {"Mean_pledge_city_YM", type number}}, "en-US"),
-		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
+		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"X1", Int64.Type}, {"X1_1", Int64.Type}, {"Country", type text}, {"City", type text}, {"id", Int64.Type}, {"name", type text}, {"blurb", type text}, {"goal", Int64.Type}, {"pledged", type number}, {"status", type text}, {"slug", type text}, {"disable_communication", type logical}, {"currency", type text}, {"currency_symbol", type text}, {"currency_trailing_code", type logical}, {"deadline", type text}, {"state_changed_at", type text}, {"created_at", type text}, {"launched_at", type text}, {"staff_pick", type logical}, {"backers_count", Int64.Type}, {"deadlineTime", Int64.Type}, {"state_changed_atTime", Int64.Type}, {"created_atTime", Int64.Type}, {"launched_atTime", Int64.Type}, {"Categories", type text}, {"spotLight", type logical}, {"pledgedUSD", type number}, {"Ex_USd", type number}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}, {"deadlineY", Int64.Type}, {"state_changed_atY", Int64.Type}, {"created_atY", Int64.Type}, {"launched_atY", Int64.Type}, {"Pledge_per_person", type text}, {"Prct_goal", type number}, {"Length_of_kick", Int64.Type}, {"City_Pop", Int64.Type}, {"Latitude", type number}, {"Longitude", type number}, {"County", type text}, {"State", type text}, {"Backers_as_Prct_of_Pop", type number}, {"Backers_as_Prct_of_Pop_YM", type number}, {"Backers_as_Prct_of_Pop_Y", type number}, {"Days_spent_making_campign", Int64.Type}, {"Days_inception_to_Deadline", Int64.Type}, {"Backers_in_city_Y", Int64.Type}, {"Backers_in_city_YM", Int64.Type}, {"All_Time_Backers_city", Int64.Type}, {"Mean_Pledge_City", type number}, {"Mean_pledge_city_Y", type number}, {"Mean_pledge_city_YM", type number}}, "en-US")
 		in
-		  #"Removed columns"
+		  #"Changed column type"
 	lineageTag: 5eddc49f-9893-4353-9a74-63a32a035ab9
-	queryGroup: Staging
+	queryGroup: 01_Sources
 
 	annotation PBI_ResultType = Table
 
-expression Staging_County =
+expression Src_County =
 		let
 		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\County.csv"), [Delimiter = ",", Columns = 9, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
@@ -20,11 +19,11 @@ expression Staging_County =
 		in
 		  #"Removed columns"
 	lineageTag: 5c4769c1-af16-4dee-bb67-553337ee5568
-	queryGroup: Staging
+	queryGroup: 01_Sources
 
 	annotation PBI_ResultType = Table
 
-expression Staging_Mapping =
+expression Src_Mapping =
 		let
 		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\Mapping.csv"), [Delimiter = ",", Columns = 8, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
@@ -32,17 +31,17 @@ expression Staging_Mapping =
 		in
 		  #"Changed column type"
 	lineageTag: 564fef24-df8e-4137-880b-f8d4db35a2be
-	queryGroup: Staging
+	queryGroup: 01_Sources
 
 	annotation PBI_ResultType = Table
 
 expression DataFolderPath = "D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = type text]
 	lineageTag: 74af6427-296c-46ca-93de-9c27090f5949
-	queryGroup: Parameters
+	queryGroup: 00_Parameters
 
 	annotation PBI_ResultType = Text
 
-expression Staging_Kaggle_2016 =
+expression Src_Kaggle_2016 =
 		let
 		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"), [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
@@ -50,9 +49,11 @@ expression Staging_Kaggle_2016 =
 		in
 		  #"Changed column type"
 	lineageTag: 8b56fe35-b71b-40ec-a63a-1c1a5bcf9e28
-	queryGroup: Staging
+	queryGroup: 01_Sources
 
-expression Staging_Kaggle_2018 =
+	annotation PBI_ResultType = Table
+
+expression Src_Kaggle_2018 =
 		let
 		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201801.csv"), [Delimiter = ",", Columns = 15, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
@@ -60,9 +61,11 @@ expression Staging_Kaggle_2018 =
 		in
 		  #"Changed column type"
 	lineageTag: 2e36497a-7bea-4814-aee1-df6cb8b9670d
-	queryGroup: Staging
+	queryGroup: 01_Sources
 
-expression WebRobots_Enrichment_Master =
+	annotation PBI_ResultType = Table
+
+expression Src_WebRobots_Latest =
 		let
 		  Source = Csv.Document(File.Contents("D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\raw\WebRobots_Enrichment_Master.csv"), [Delimiter = ",", Columns = 12, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
@@ -70,5 +73,62 @@ expression WebRobots_Enrichment_Master =
 		in
 		  #"Changed column type"
 	lineageTag: 9236ffe7-2ed4-40e2-9973-a3a49d9f586c
-	queryGroup: Staging
+	queryGroup: 01_Sources
+
+	annotation PBI_ResultType = Table
+
+expression Stg_Kaggle_2016 =
+		let
+		  Source = Src_Kaggle_2016
+		in
+		  Source
+	lineageTag: 1826fbb4-d32e-47ad-80d1-8c4961b389a4
+	queryGroup: 02_Staging
+
+expression Stg_Kaggle_2018 =
+		let
+		  Source = Src_Kaggle_2018,
+		  #"Renamed columns" = Table.RenameColumns(Source, {{"ID", "ProjectID"}, {"name", "ProjectName"}, {"category", "Subcategory"}, {"main_category", "Category"}, {"currency", "CurrencyCode"}, {"deadline", "DeadlineDate"}, {"goal", "GoalLocal"}, {"launched", "LaunchDateTime"}, {"pledged", "PledgedLocal"}, {"state", "ProjectStatus"}, {"backers", "BackerCount"}, {"country", "CountryCode"}, {"usd pledged", "PledgedUSD_KS"}}),
+		  #"Trimmed text" = Table.TransformColumns(#"Renamed columns", {{"ProjectName", each Text.Trim(_), type nullable text}, {"Subcategory", each Text.Trim(_), type nullable text}, {"Category", each Text.Trim(_), type nullable text}, {"CurrencyCode", each Text.Trim(_), type nullable text}, {"CountryCode", each Text.Trim(_), type nullable text}, {"ProjectStatus", each Text.Trim(_), type nullable text}}),
+		  #"Cleaned text" = Table.TransformColumns(#"Trimmed text", {{"ProjectName", each Text.Clean(_), type nullable text}, {"Subcategory", each Text.Clean(_), type nullable text}, {"Category", each Text.Clean(_), type nullable text}, {"CurrencyCode", each Text.Clean(_), type nullable text}, {"CountryCode", each Text.Clean(_), type nullable text}, {"ProjectStatus", each Text.Clean(_), type nullable text}}),
+		  #"Capitalized each word" = Table.TransformColumns(#"Cleaned text", {{"ProjectStatus", each Text.Proper(_), type nullable text}}),
+		  #"Inserted date" = Table.AddColumn(#"Capitalized each word", "LaunchDate", each DateTime.Date([LaunchDateTime]), type nullable date),
+		  #"Reordered columns" = Table.ReorderColumns(#"Inserted date", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "DeadlineDate", "GoalLocal", "LaunchDateTime", "LaunchDate", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD_KS", "usd_pledged_real", "usd_goal_real"}),
+		  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Reordered columns", "CampaignDurationDays", each Duration.Days([DeadlineDate] - [LaunchDate])), {{"CampaignDurationDays", Int64.Type}}),
+		  #"Inserted year" = Table.AddColumn(#"Added custom", "LaunchYear", each Date.Year([LaunchDateTime]), type nullable number),
+		  #"Reordered columns 1" = Table.ReorderColumns(#"Inserted year", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "DeadlineDate", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD_KS", "usd_pledged_real", "usd_goal_real", "CampaignDurationDays"}),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Reordered columns 1", {{"LaunchYear", Int64.Type}}),
+		  #"Inserted month" = Table.AddColumn(#"Changed column type", "LaunchMonth", each Date.Month([LaunchDate]), type nullable number),
+		  #"Inserted quarter" = Table.AddColumn(#"Inserted month", "LaunchQuarter", each Date.QuarterOfYear([LaunchDate]), type nullable number),
+		  #"Reordered columns 2" = Table.ReorderColumns(#"Inserted quarter", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "DeadlineDate", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD_KS", "usd_pledged_real", "usd_goal_real", "CampaignDurationDays", "LaunchMonth", "LaunchQuarter"}),
+		  #"Added prefix" = Table.TransformColumns(#"Reordered columns 2", {{"LaunchQuarter", each "Q" & Text.From(_), type text}}),
+		  #"Changed column type 1" = Table.TransformColumnTypes(#"Added prefix", {{"LaunchMonth", Int64.Type}}),
+		  #"Reordered columns 3" = Table.ReorderColumns(#"Changed column type 1", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD_KS", "usd_pledged_real", "usd_goal_real"}),
+		  #"Renamed columns 1" = Table.RenameColumns(#"Reordered columns 3", {{"usd_pledged_real", "PledgedUSD"}, {"usd_goal_real", "GoalUSD"}})
+		in
+		  #"Renamed columns 1"
+	lineageTag: f3cd2443-7a1f-45fe-88f9-6176683a8176
+	queryGroup: 02_Staging
+
+	annotation PBI_ResultType = Table
+
+expression Stg_Master =
+		let
+		  Source = Src_Master,
+		  #"Removed columns" = Table.RemoveColumns(Source, {""}),
+		  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Removed columns", "Source_System", each "MasterKickstarter"), {{"Source_System", type text}}),
+		  #"Added custom 1" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom", "Snapshot_Date", each #date(2017, 12, 31)), {{"Snapshot_Date", type date}})
+		in
+		  #"Added custom 1"
+	lineageTag: b22bf779-8453-48dc-9c10-fa7a35694ee4
+	queryGroup: 02_Staging
+
+expression Stg_WebRobots =
+		let
+		  Source = Src_WebRobots_Latest,
+		  #"Changed column type" = Table.TransformColumnTypes(Source, {{"goal_usd", Currency.Type}, {"pledged_usd", Currency.Type}})
+		in
+		  #"Changed column type"
+	lineageTag: 3d62be88-76ba-404e-bb69-b673c8790d63
+	queryGroup: 02_Staging
 
