@@ -119,7 +119,40 @@ expression Stg_Kaggle_2016 =
 		    null
 		else
 		    [PledgedUSD] / [BackerCount]), {{"PledgePerBacker", type number}}),
-		  #"Reordered columns 7" = Table.ReorderColumns(#"Added custom 5", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "CountryCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDateTime", "DeadlineDate", "PledgedLocal", "ProjectStatus", "BackerCount", "PledgedUSD", "GoalUSD", "GoalAchievementPct", "HasGoalUSD", "Source_System", "Snapshot_Date", "PledgePerBacker"})
+		  #"Added custom 6" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 5", "CampaignDurationDays", each if [LaunchDate] = null or [DeadlineDate] = null then
+		    null
+		else
+		    Duration.Days([DeadlineDate] - [LaunchDate])), {{"CampaignDurationDays", Int64.Type}}),
+		  #"Reordered columns 7" = Table.ReorderColumns(
+		    #"Added custom 6",
+		    {
+		        "ProjectID",
+		        "ProjectName",
+		        "Subcategory",
+		        "Category",
+		        "CurrencyCode",
+		        "CountryCode",
+		        "GoalLocal",
+		        "PledgedLocal",
+		        "GoalUSD",
+		        "PledgedUSD",
+		        "BackerCount",
+		        "ProjectStatus",
+		        "LaunchDateTime",
+		        "LaunchDate",
+		        "LaunchYear",
+		        "LaunchMonth",
+		        "LaunchQuarter",
+		        "DeadlineDateTime",
+		        "DeadlineDate",
+		        "CampaignDurationDays",
+		        "GoalAchievementPct",
+		        "PledgePerBacker",
+		        "HasGoalUSD",
+		        "Source_System",
+		        "Snapshot_Date"
+		    }
+		)
 		in
 		  #"Reordered columns 7"
 	lineageTag: 1826fbb4-d32e-47ad-80d1-8c4961b389a4
@@ -159,7 +192,35 @@ expression Stg_Kaggle_2018 =
 		  #"Reordered columns 4" = Table.ReorderColumns(#"Added custom 3", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "CountryCode", "PledgedUSD_KS", "PledgedUSD", "GoalUSD"}),
 		  #"Added custom 4" = Table.TransformColumnTypes(Table.AddColumn(#"Reordered columns 4", "Source_System", each "Kaggle_2018"), {{"Source_System", type text}}),
 		  #"Added custom 5" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 4", "Snapshot_Date", each #date(2018, 1, 1)), {{"Snapshot_Date", type date}}),
-		  #"Reordered columns 5" = Table.ReorderColumns(#"Added custom 5", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "CountryCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "PledgedUSD_KS", "PledgedUSD", "GoalUSD", "Source_System", "Snapshot_Date"})
+		  #"Reordered columns 5" = Table.ReorderColumns(
+		    #"Added custom 5",
+		    {
+		        "ProjectID",
+		        "ProjectName",
+		        "Subcategory",
+		        "Category",
+		        "CurrencyCode",
+		        "CountryCode",
+		        "GoalLocal",
+		        "PledgedLocal",
+		        "GoalUSD",
+		        "PledgedUSD_KS",
+		        "PledgedUSD",
+		        "BackerCount",
+		        "ProjectStatus",
+		        "LaunchDateTime",
+		        "LaunchDate",
+		        "LaunchYear",
+		        "LaunchMonth",
+		        "LaunchQuarter",
+		        "DeadlineDate",
+		        "CampaignDurationDays",
+		        "GoalAchievementPct",
+		        "PledgePerBacker",
+		        "Source_System",
+		        "Snapshot_Date"
+		    }
+		)
 		in
 		  #"Reordered columns 5"
 	lineageTag: f3cd2443-7a1f-45fe-88f9-6176683a8176
