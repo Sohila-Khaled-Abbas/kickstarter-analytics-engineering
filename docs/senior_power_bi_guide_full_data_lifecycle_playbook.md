@@ -1,5 +1,3 @@
-Yes. And I’d change the architecture from the earlier playbook in one important way:
-
 **Do not collapse all three datasets into one “latest project” fact.**  
 WebRobots is a recurring snapshot source, so deduplicating it down to one row per project destroys the historical behavior you actually want to analyze. WebRobots says its Kickstarter crawl has been run monthly since March 2016, with dated snapshots available through 2026. [Web Scraping Service](https://webrobots.io/kickstarter-datasets/)
 
