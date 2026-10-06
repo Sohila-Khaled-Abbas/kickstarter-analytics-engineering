@@ -43,7 +43,7 @@ expression DataFolderPath = "D:\courses\Data Analysis 26-27\Projects\Kickstarter
 
 expression Src_Kaggle_2016 =
 		let
-		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"), [Delimiter = ",", Columns = 17, QuoteStyle = QuoteStyle.None]),
+		  Source = Csv.Document(File.Contents (DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"), [Delimiter = ",", Columns = 17, Encoding = 1252]),
 		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
 		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"ID ", Int64.Type}, {"name ", type text}, {"category ", type text}, {"main_category ", type text}, {"currency ", type text}, {"deadline ", type datetime}, {"goal ", Int64.Type}, {"launched ", type datetime}, {"pledged ", type number}, {"state ", type text}, {"backers ", Int64.Type}, {"country ", type text}, {"usd pledged ", type number}, {"", type text}, {"_1", type text}, {"_2", type text}, {"_3", type text}}, "en-US")
 		in
@@ -79,11 +79,53 @@ expression Src_WebRobots_Latest =
 
 expression Stg_Kaggle_2016 =
 		let
-		  Source = Src_Kaggle_2016
+		  Source = Src_Kaggle_2016,
+		  #"Choose columns" = Table.SelectColumns(Source, {"ID ", "name ", "category ", "main_category ", "currency ", "deadline ", "goal ", "launched ", "pledged ", "state ", "backers ", "country ", "usd pledged "}),
+		  #"Renamed columns" = Table.RenameColumns(#"Choose columns", {{"ID ", "ProjectID"}, {"name ", "ProjectName"}, {"category ", "Subcategory"}, {"main_category ", "Category"}, {"currency ", "CurrencyCode"}, {"deadline ", "DeadlineDateTime"}, {"goal ", "GoalLocal"}, {"launched ", "LaunchDateTime"}, {"pledged ", "PledgedLocal"}, {"state ", "ProjectStatus"}, {"backers ", "BackerCount"}, {"country ", "CountryCode"}, {"usd pledged ", "PledgedUSD"}}),
+		  #"Trimmed text" = Table.TransformColumns(#"Renamed columns", {{"ProjectName", each Text.Trim(_), type nullable text}, {"Subcategory", each Text.Trim(_), type nullable text}, {"Category", each Text.Trim(_), type nullable text}, {"CurrencyCode", each Text.Trim(_), type nullable text}, {"ProjectStatus", each Text.Trim(_), type nullable text}, {"CountryCode", each Text.Trim(_), type nullable text}}),
+		  #"Cleaned text" = Table.TransformColumns(#"Trimmed text", {{"ProjectName", each Text.Clean(_), type nullable text}, {"Subcategory", each Text.Clean(_), type nullable text}, {"Category", each Text.Clean(_), type nullable text}, {"CurrencyCode", each Text.Clean(_), type nullable text}, {"ProjectStatus", each Text.Clean(_), type nullable text}, {"CountryCode", each Text.Clean(_), type nullable text}}),
+		  #"Capitalized each word" = Table.TransformColumns(#"Cleaned text", {{"ProjectStatus", each Text.Proper(_), type nullable text}}),
+		  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Capitalized each word", "GoalUSD", each if [CurrencyCode] = null or [GoalLocal] = null then
+		    null
+		else if Text.Upper(Text.Trim([CurrencyCode])) = "USD" then
+		    [GoalLocal]
+		else
+		    null), {{"GoalUSD", Currency.Type}}),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Added custom", {{"PledgedUSD", Currency.Type}, {"GoalLocal", Currency.Type}, {"PledgedLocal", Currency.Type}}),
+		  #"Added custom 1" = Table.TransformColumnTypes(Table.AddColumn(#"Changed column type", "HasGoalUSD", each if [GoalUSD] = null then 0 else 1), {{"HasGoalUSD", type logical}}),
+		  #"Added custom 2" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 1", "Source_System", each "Kaggle_2016"), {{"Source_System", type text}}),
+		  #"Added custom 3" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 2", "Snapshot_Date", each #date(2016, 1, 1)), {{"Snapshot_Date", type date}}),
+		  #"Reordered columns" = Table.ReorderColumns(#"Added custom 3", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "DeadlineDateTime", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Inserted date" = Table.AddColumn(#"Reordered columns", "LaunchDate", each DateTime.Date([LaunchDateTime]), type nullable date),
+		  #"Reordered columns 1" = Table.ReorderColumns(#"Inserted date", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "DeadlineDateTime", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Inserted year" = Table.AddColumn(#"Reordered columns 1", "LaunchYear", each Date.Year([LaunchDateTime]), type nullable number),
+		  #"Reordered columns 2" = Table.ReorderColumns(#"Inserted year", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "DeadlineDateTime", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Inserted month" = Table.AddColumn(#"Reordered columns 2", "LaunchMonth", each Date.Month([LaunchDateTime]), type nullable number),
+		  #"Reordered columns 3" = Table.ReorderColumns(#"Inserted month", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "DeadlineDateTime", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Inserted quarter" = Table.AddColumn(#"Reordered columns 3", "LaunchQuarter", each Date.QuarterOfYear([LaunchDateTime]), type nullable number),
+		  #"Reordered columns 4" = Table.ReorderColumns(#"Inserted quarter", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDateTime", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Changed column type 1" = Table.TransformColumnTypes(#"Reordered columns 4", {{"LaunchYear", Int64.Type}, {"LaunchMonth", Int64.Type}}),
+		  #"Added prefix" = Table.TransformColumns(#"Changed column type 1", {{"LaunchQuarter", each "Q" & Text.From(_), type text}}),
+		  #"Inserted date 1" = Table.AddColumn(#"Added prefix", "DeadlineDate", each DateTime.Date([DeadlineDateTime]), type nullable date),
+		  #"Reordered columns 5" = Table.ReorderColumns(#"Inserted date 1", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDateTime", "DeadlineDate", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Added custom 4" = Table.TransformColumnTypes(Table.AddColumn(#"Reordered columns 5", "GoalAchievementPct", each if [GoalUSD] = null or [GoalUSD] = 0 or [PledgedUSD] = null then
+		    null
+		else
+		    [PledgedUSD] / [GoalUSD]), {{"GoalAchievementPct", Percentage.Type}}),
+		  #"Reordered columns 6" = Table.ReorderColumns(#"Added custom 4", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDateTime", "DeadlineDate", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD", "GoalUSD", "GoalAchievementPct", "HasGoalUSD", "Source_System", "Snapshot_Date"}),
+		  #"Added custom 5" = Table.TransformColumnTypes(Table.AddColumn(#"Reordered columns 6", "PledgePerBacker", each if [PledgedUSD] = null
+		    or [BackerCount] = null
+		    or [BackerCount] = 0 then
+		    null
+		else
+		    [PledgedUSD] / [BackerCount]), {{"PledgePerBacker", type number}}),
+		  #"Reordered columns 7" = Table.ReorderColumns(#"Added custom 5", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "CountryCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDateTime", "DeadlineDate", "PledgedLocal", "ProjectStatus", "BackerCount", "PledgedUSD", "GoalUSD", "GoalAchievementPct", "HasGoalUSD", "Source_System", "Snapshot_Date", "PledgePerBacker"})
 		in
-		  Source
+		  #"Reordered columns 7"
 	lineageTag: 1826fbb4-d32e-47ad-80d1-8c4961b389a4
 	queryGroup: 02_Staging
+
+	annotation PBI_ResultType = Table
 
 expression Stg_Kaggle_2018 =
 		let
@@ -114,9 +156,12 @@ expression Stg_Kaggle_2018 =
 		  #"Added custom 3" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 2", "PledgePerBacker", each if [BackerCount] = null or [BackerCount] = 0 or [PledgedUSD] = null
 		then null
 		else [PledgedUSD] / [BackerCount]), {{"PledgePerBacker", type number}}),
-		  #"Reordered columns 4" = Table.ReorderColumns(#"Added custom 3", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "CountryCode", "PledgedUSD_KS", "PledgedUSD", "GoalUSD"})
+		  #"Reordered columns 4" = Table.ReorderColumns(#"Added custom 3", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "CountryCode", "PledgedUSD_KS", "PledgedUSD", "GoalUSD"}),
+		  #"Added custom 4" = Table.TransformColumnTypes(Table.AddColumn(#"Reordered columns 4", "Source_System", each "Kaggle_2018"), {{"Source_System", type text}}),
+		  #"Added custom 5" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 4", "Snapshot_Date", each #date(2018, 1, 1)), {{"Snapshot_Date", type date}}),
+		  #"Reordered columns 5" = Table.ReorderColumns(#"Added custom 5", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "CountryCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "PledgedUSD_KS", "PledgedUSD", "GoalUSD", "Source_System", "Snapshot_Date"})
 		in
-		  #"Reordered columns 4"
+		  #"Reordered columns 5"
 	lineageTag: f3cd2443-7a1f-45fe-88f9-6176683a8176
 	queryGroup: 02_Staging
 
