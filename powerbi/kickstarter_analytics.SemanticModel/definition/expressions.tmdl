@@ -104,9 +104,19 @@ expression Stg_Kaggle_2018 =
 		  #"Added prefix" = Table.TransformColumns(#"Reordered columns 2", {{"LaunchQuarter", each "Q" & Text.From(_), type text}}),
 		  #"Changed column type 1" = Table.TransformColumnTypes(#"Added prefix", {{"LaunchMonth", Int64.Type}}),
 		  #"Reordered columns 3" = Table.ReorderColumns(#"Changed column type 1", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "CountryCode", "PledgedUSD_KS", "usd_pledged_real", "usd_goal_real"}),
-		  #"Renamed columns 1" = Table.RenameColumns(#"Reordered columns 3", {{"usd_pledged_real", "PledgedUSD"}, {"usd_goal_real", "GoalUSD"}})
+		  #"Renamed columns 1" = Table.RenameColumns(#"Reordered columns 3", {{"usd_pledged_real", "PledgedUSD"}, {"usd_goal_real", "GoalUSD"}}),
+		  #"Added custom 1" = Table.TransformColumnTypes(Table.AddColumn(#"Renamed columns 1", "FundingRatio", each if [GoalUSD] = null or [GoalUSD] = 0
+		then null
+		else [PledgedUSD] / [GoalUSD]), {{"FundingRatio", type number}}),
+		  #"Added custom 2" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 1", "GoalAchievementPct", each if [GoalUSD] = null or [GoalUSD] = 0 or [PledgedUSD] = null
+		then null
+		else [PledgedUSD] / [GoalUSD]), {{"GoalAchievementPct", Percentage.Type}}),
+		  #"Added custom 3" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom 2", "PledgePerBacker", each if [BackerCount] = null or [BackerCount] = 0 or [PledgedUSD] = null
+		then null
+		else [PledgedUSD] / [BackerCount]), {{"PledgePerBacker", type number}}),
+		  #"Reordered columns 4" = Table.ReorderColumns(#"Added custom 3", {"ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode", "GoalLocal", "LaunchDateTime", "LaunchDate", "LaunchYear", "LaunchMonth", "LaunchQuarter", "DeadlineDate", "CampaignDurationDays", "PledgedLocal", "ProjectStatus", "BackerCount", "FundingRatio", "GoalAchievementPct", "PledgePerBacker", "CountryCode", "PledgedUSD_KS", "PledgedUSD", "GoalUSD"})
 		in
-		  #"Renamed columns 1"
+		  #"Reordered columns 4"
 	lineageTag: f3cd2443-7a1f-45fe-88f9-6176683a8176
 	queryGroup: 02_Staging
 
