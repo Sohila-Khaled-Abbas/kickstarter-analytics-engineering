@@ -1,10 +1,24 @@
 expression Src_Master =
 		let
-		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"), [Delimiter = ",", Columns = 57, QuoteStyle = QuoteStyle.Csv]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"X1", Int64.Type}, {"X1_1", Int64.Type}, {"Country", type text}, {"City", type text}, {"id", Int64.Type}, {"name", type text}, {"blurb", type text}, {"goal", Int64.Type}, {"pledged", type number}, {"status", type text}, {"slug", type text}, {"disable_communication", type logical}, {"currency", type text}, {"currency_symbol", type text}, {"currency_trailing_code", type logical}, {"deadline", type text}, {"state_changed_at", type text}, {"created_at", type text}, {"launched_at", type text}, {"staff_pick", type logical}, {"backers_count", Int64.Type}, {"deadlineTime", Int64.Type}, {"state_changed_atTime", Int64.Type}, {"created_atTime", Int64.Type}, {"launched_atTime", Int64.Type}, {"Categories", type text}, {"spotLight", type logical}, {"pledgedUSD", type number}, {"Ex_USd", type number}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}, {"deadlineY", Int64.Type}, {"state_changed_atY", Int64.Type}, {"created_atY", Int64.Type}, {"launched_atY", Int64.Type}, {"Pledge_per_person", type text}, {"Prct_goal", type number}, {"Length_of_kick", Int64.Type}, {"City_Pop", Int64.Type}, {"Latitude", type number}, {"Longitude", type number}, {"County", type text}, {"State", type text}, {"Backers_as_Prct_of_Pop", type number}, {"Backers_as_Prct_of_Pop_YM", type number}, {"Backers_as_Prct_of_Pop_Y", type number}, {"Days_spent_making_campign", Int64.Type}, {"Days_inception_to_Deadline", Int64.Type}, {"Backers_in_city_Y", Int64.Type}, {"Backers_in_city_YM", Int64.Type}, {"All_Time_Backers_city", Int64.Type}, {"Mean_Pledge_City", type number}, {"Mean_pledge_city_Y", type number}, {"Mean_pledge_city_YM", type number}}, "en-US")
+		    Source =
+		        Csv.Document(
+		            File.Contents(
+		                DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"
+		            ),
+		            [
+		                Delimiter = ",",
+		                Columns = 57,
+		                QuoteStyle = QuoteStyle.Csv
+		            ]
+		        ),
+		
+		    #"Promoted Headers" =
+		        Table.PromoteHeaders(
+		            Source,
+		            [PromoteAllScalars = true]
+		        )
 		in
-		  #"Changed column type"
+		    #"Promoted Headers"
 	lineageTag: 5eddc49f-9893-4353-9a74-63a32a035ab9
 	queryGroup: 01_Sources
 
@@ -230,14 +244,809 @@ expression Stg_Kaggle_2018 =
 
 expression Stg_Master =
 		let
-		  Source = Src_Master,
-		  #"Removed columns" = Table.RemoveColumns(Source, {""}),
-		  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Removed columns", "Source_System", each "MasterKickstarter"), {{"Source_System", type text}}),
-		  #"Added custom 1" = Table.TransformColumnTypes(Table.AddColumn(#"Added custom", "Snapshot_Date", each #date(2017, 12, 31)), {{"Snapshot_Date", type date}})
+		    Source = Src_Master,
+		
+		    // =========================================================
+		    // 1. REUSABLE CLEANING FUNCTIONS
+		    // =========================================================
+		
+		    CleanText = (value as any) as nullable text =>
+		        if value = null then
+		            null
+		        else
+		            Text.Trim(
+		                Text.Clean(
+		                    Text.From(value)
+		                )
+		            ),
+		
+		    CleanNumber = (value as any) as nullable number =>
+		        let
+		            txt =
+		                if value = null then
+		                    null
+		                else
+		                    Text.Trim(
+		                        Text.Clean(
+		                            Text.From(value)
+		                        )
+		                    ),
+		
+		            lowerTxt =
+		                if txt = null then
+		                    null
+		                else
+		                    Text.Lower(txt),
+		
+		            normalized =
+		                if txt = null then
+		                    null
+		                else
+		                    Text.Replace(
+		                        Text.Replace(
+		                            Text.Replace(
+		                                Text.Replace(
+		                                    Text.Replace(
+		                                        txt,
+		                                        "$",
+		                                        ""
+		                                    ),
+		                                    "£",
+		                                    ""
+		                                ),
+		                                "€",
+		                                ""
+		                            ),
+		                            "¥",
+		                            ""
+		                        ),
+		                        ",",
+		                        ""
+		                    ),
+		
+		            result =
+		                if txt = null
+		                    or txt = ""
+		                    or List.Contains(
+		                        {
+		                            "null",
+		                            "n/a",
+		                            "na",
+		                            "none",
+		                            "unknown",
+		                            "-",
+		                            "--"
+		                        },
+		                        lowerTxt
+		                    )
+		                then
+		                    null
+		                else
+		                    try Number.FromText(
+		                        normalized,
+		                        "en-US"
+		                    )
+		                    otherwise
+		                        null
+		        in
+		            result,
+		
+		    CleanDateTime = (value as any) as nullable datetime =>
+		        let
+		            result =
+		                if value = null then
+		                    null
+		                else
+		                    try DateTime.From(value)
+		                    otherwise
+		                        try DateTime.FromText(
+		                            Text.Trim(
+		                                Text.Clean(
+		                                    Text.From(value)
+		                                )
+		                            ),
+		                            "en-US"
+		                        )
+		                        otherwise
+		                            null
+		        in
+		            result,
+		
+		    CleanLogical = (value as any) as nullable logical =>
+		        let
+		            txt =
+		                if value = null then
+		                    null
+		                else
+		                    Text.Lower(
+		                        Text.Trim(
+		                            Text.Clean(
+		                                Text.From(value)
+		                            )
+		                        )
+		                    ),
+		
+		            result =
+		                if value = null then
+		                    null
+		                else if List.Contains(
+		                    {"true", "1", "yes", "y"},
+		                    txt
+		                ) then
+		                    true
+		                else if List.Contains(
+		                    {"false", "0", "no", "n"},
+		                    txt
+		                ) then
+		                    false
+		                else
+		                    try Logical.From(value)
+		                    otherwise null
+		        in
+		            result,
+		
+		    // =========================================================
+		    // 2. REMOVE TECHNICAL COLUMNS
+		    // =========================================================
+		
+		    #"Removed Technical Columns" =
+		        Table.RemoveColumns(
+		            Source,
+		            {"", "X1", "X1_1"},
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 3. RENAME RAW COLUMNS
+		    // =========================================================
+		
+		    #"Renamed Columns" =
+		        Table.RenameColumns(
+		            #"Removed Technical Columns",
+		            {
+		                {"id", "ProjectID"},
+		                {"name", "ProjectName"},
+		                {"blurb", "Blurb"},
+		                {"slug", "ProjectSlug"},
+		                {"status", "ProjectStatus"},
+		                {"currency", "CurrencyCode"},
+		                {"currency_symbol", "CurrencySymbol"},
+		                {"currency_trailing_code", "CurrencyTrailingCode"},
+		                {"goal", "GoalLocal"},
+		                {"pledged", "PledgedLocal"},
+		                {"backers_count", "BackerCount"},
+		                {"pledgedUSD", "PledgedUSD"},
+		                {"Country", "CountryName"},
+		                {"Categories", "Category"},
+		                {"deadline", "DeadlineDateTime"},
+		                {"state_changed_at", "StateChangedDateTime"},
+		                {"created_at", "CreatedDateTime"},
+		                {"launched_at", "LaunchDateTime"},
+		                {"staff_pick", "StaffPickFlag"},
+		                {"spotLight", "SpotlightFlag"},
+		                {"disable_communication", "DisableCommunicationFlag"}
+		            },
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 4. CLEAN TEXT
+		    //
+		    // IMPORTANT:
+		    // Table.TransformColumns requires:
+		    //   third argument  = default transformation
+		    //   fourth argument = missing-field behavior
+		    // =========================================================
+		
+		    #"Cleaned Text" =
+		        Table.TransformColumns(
+		            #"Renamed Columns",
+		            {
+		                {"ProjectName", each CleanText(_), type nullable text},
+		                {"Blurb", each CleanText(_), type nullable text},
+		                {"ProjectSlug", each CleanText(_), type nullable text},
+		                {"CountryName", each CleanText(_), type nullable text},
+		                {"City", each CleanText(_), type nullable text},
+		                {"County", each CleanText(_), type nullable text},
+		                {"State", each CleanText(_), type nullable text},
+		                {"Category", each CleanText(_), type nullable text},
+		                {"ProjectStatus", each CleanText(_), type nullable text},
+		                {"CurrencyCode", each CleanText(_), type nullable text},
+		                {"CurrencySymbol", each CleanText(_), type nullable text}
+		            },
+		            null,
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 5. NORMALIZE CATEGORY + STATUS
+		    // =========================================================
+		
+		    #"Normalized Category and Status" =
+		        Table.TransformColumns(
+		            #"Cleaned Text",
+		            {
+		                {
+		                    "Category",
+		                    each
+		                        if _ = null then
+		                            null
+		                        else
+		                            Text.Proper(
+		                                Text.Replace(
+		                                    _,
+		                                    "%20",
+		                                    " "
+		                                )
+		                            ),
+		                    type nullable text
+		                },
+		                {
+		                    "ProjectStatus",
+		                    each
+		                        if _ = null then
+		                            null
+		                        else
+		                            Text.Lower(_),
+		                    type nullable text
+		                }
+		            },
+		            null,
+		            MissingField.Ignore
+		        ),
+		
+		    #"Fixed Category Encoding" =
+		        Table.ReplaceValue(
+		            #"Normalized Category and Status",
+		            "Film Video",
+		            "Film & Video",
+		            Replacer.ReplaceValue,
+		            {"Category"}
+		        ),
+		
+		    // =========================================================
+		    // 6. SUBCATEGORY
+		    // =========================================================
+		
+		    #"Added Subcategory" =
+		        Table.AddColumn(
+		            #"Fixed Category Encoding",
+		            "Subcategory",
+		            each "Not Available",
+		            type text
+		        ),
+		
+		    // =========================================================
+		    // 7. SAFE NUMERIC CLEANING
+		    // =========================================================
+		
+		    #"Cleaned Numeric Columns" =
+		        Table.TransformColumns(
+		            #"Added Subcategory",
+		            {
+		                {"ProjectID", each CleanNumber(_), Int64.Type},
+		
+		                {"GoalLocal", each CleanNumber(_), type nullable number},
+		                {"PledgedLocal", each CleanNumber(_), type nullable number},
+		                {"PledgedUSD", each CleanNumber(_), type nullable number},
+		
+		                {"BackerCount", each CleanNumber(_), Int64.Type},
+		
+		                {"deadlineTime", each CleanNumber(_), Int64.Type},
+		                {"state_changed_atTime", each CleanNumber(_), Int64.Type},
+		                {"created_atTime", each CleanNumber(_), Int64.Type},
+		                {"launched_atTime", each CleanNumber(_), Int64.Type},
+		
+		                {"Ex_USd", each CleanNumber(_), type nullable number},
+		
+		                {"deadlineY", each CleanNumber(_), Int64.Type},
+		                {"state_changed_atY", each CleanNumber(_), Int64.Type},
+		                {"created_atY", each CleanNumber(_), Int64.Type},
+		                {"launched_atY", each CleanNumber(_), Int64.Type},
+		
+		                {"Pledge_per_person", each CleanNumber(_), type nullable number},
+		                {"Prct_goal", each CleanNumber(_), type nullable number},
+		                {"Length_of_kick", each CleanNumber(_), Int64.Type},
+		
+		                {"City_Pop", each CleanNumber(_), Int64.Type},
+		
+		                {"Latitude", each CleanNumber(_), type nullable number},
+		                {"Longitude", each CleanNumber(_), type nullable number},
+		
+		                {"Backers_as_Prct_of_Pop", each CleanNumber(_), type nullable number},
+		                {"Backers_as_Prct_of_Pop_YM", each CleanNumber(_), type nullable number},
+		                {"Backers_as_Prct_of_Pop_Y", each CleanNumber(_), type nullable number},
+		
+		                {"Days_spent_making_campign", each CleanNumber(_), Int64.Type},
+		                {"Days_inception_to_Deadline", each CleanNumber(_), Int64.Type},
+		
+		                {"Backers_in_city_Y", each CleanNumber(_), Int64.Type},
+		                {"Backers_in_city_YM", each CleanNumber(_), Int64.Type},
+		                {"All_Time_Backers_city", each CleanNumber(_), Int64.Type},
+		
+		                {"Mean_Pledge_City", each CleanNumber(_), type nullable number},
+		                {"Mean_pledge_city_Y", each CleanNumber(_), type nullable number},
+		                {"Mean_pledge_city_YM", each CleanNumber(_), type nullable number}
+		            },
+		            null,
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 8. SAFE DATE/TIME CLEANING
+		    // =========================================================
+		
+		    #"Cleaned DateTime Columns" =
+		        Table.TransformColumns(
+		            #"Cleaned Numeric Columns",
+		            {
+		                {
+		                    "CreatedDateTime",
+		                    each CleanDateTime(_),
+		                    type nullable datetime
+		                },
+		                {
+		                    "LaunchDateTime",
+		                    each CleanDateTime(_),
+		                    type nullable datetime
+		                },
+		                {
+		                    "DeadlineDateTime",
+		                    each CleanDateTime(_),
+		                    type nullable datetime
+		                },
+		                {
+		                    "StateChangedDateTime",
+		                    each CleanDateTime(_),
+		                    type nullable datetime
+		                }
+		            },
+		            null,
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 9. SAFE BOOLEAN CLEANING
+		    // =========================================================
+		
+		    #"Cleaned Boolean Columns" =
+		        Table.TransformColumns(
+		            #"Cleaned DateTime Columns",
+		            {
+		                {
+		                    "StaffPickFlag",
+		                    each CleanLogical(_),
+		                    type nullable logical
+		                },
+		                {
+		                    "SpotlightFlag",
+		                    each CleanLogical(_),
+		                    type nullable logical
+		                },
+		                {
+		                    "DisableCommunicationFlag",
+		                    each CleanLogical(_),
+		                    type nullable logical
+		                }
+		            },
+		            null,
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 10. LAUNCH DATE
+		    // =========================================================
+		
+		    #"Added LaunchDate" =
+		        Table.AddColumn(
+		            #"Cleaned Boolean Columns",
+		            "LaunchDate",
+		            each
+		                if [LaunchDateTime] = null then
+		                    null
+		                else
+		                    Date.From([LaunchDateTime]),
+		            type nullable date
+		        ),
+		
+		    // =========================================================
+		    // 11. DEADLINE DATE
+		    // =========================================================
+		
+		    #"Added DeadlineDate" =
+		        Table.AddColumn(
+		            #"Added LaunchDate",
+		            "DeadlineDate",
+		            each
+		                if [DeadlineDateTime] = null then
+		                    null
+		                else
+		                    Date.From([DeadlineDateTime]),
+		            type nullable date
+		        ),
+		
+		    // =========================================================
+		    // 12. LAUNCH YEAR
+		    // =========================================================
+		
+		    #"Added LaunchYear" =
+		        Table.AddColumn(
+		            #"Added DeadlineDate",
+		            "LaunchYear",
+		            each
+		                if [LaunchDate] = null then
+		                    null
+		                else
+		                    Date.Year([LaunchDate]),
+		            Int64.Type
+		        ),
+		
+		    // =========================================================
+		    // 13. LAUNCH MONTH
+		    // =========================================================
+		
+		    #"Added LaunchMonth" =
+		        Table.AddColumn(
+		            #"Added LaunchYear",
+		            "LaunchMonth",
+		            each
+		                if [LaunchDate] = null then
+		                    null
+		                else
+		                    Date.Month([LaunchDate]),
+		            Int64.Type
+		        ),
+		
+		    // =========================================================
+		    // 14. LAUNCH QUARTER
+		    // =========================================================
+		
+		    #"Added LaunchQuarter" =
+		        Table.AddColumn(
+		            #"Added LaunchMonth",
+		            "LaunchQuarter",
+		            each
+		                if [LaunchDate] = null then
+		                    null
+		                else
+		                    "Q" &
+		                    Text.From(
+		                        Date.QuarterOfYear([LaunchDate])
+		                    ),
+		            type nullable text
+		        ),
+		
+		    // =========================================================
+		    // 15. GOAL USD
+		    // Only USD campaigns can safely use GoalLocal as GoalUSD
+		    // because MasterKickstarter has no usd_goal_real field.
+		    // =========================================================
+		
+		    #"Added GoalUSD" =
+		        Table.AddColumn(
+		            #"Added LaunchQuarter",
+		            "GoalUSD",
+		            each
+		                if [CurrencyCode] = null
+		                    or [GoalLocal] = null
+		                then
+		                    null
+		                else if
+		                    Text.Upper(
+		                        Text.Trim([CurrencyCode])
+		                    ) = "USD"
+		                then
+		                    [GoalLocal]
+		                else
+		                    null,
+		            type nullable number
+		        ),
+		
+		    // =========================================================
+		    // 16. HAS GOAL USD
+		    // =========================================================
+		
+		    #"Added HasGoalUSD" =
+		        Table.AddColumn(
+		            #"Added GoalUSD",
+		            "HasGoalUSD",
+		            each [GoalUSD] <> null,
+		            type logical
+		        ),
+		
+		    // =========================================================
+		    // 17. GOAL ACHIEVEMENT %
+		    // =========================================================
+		
+		    #"Added GoalAchievementPct" =
+		        Table.AddColumn(
+		            #"Added HasGoalUSD",
+		            "GoalAchievementPct",
+		            each
+		                if [GoalUSD] = null
+		                    or [GoalUSD] = 0
+		                    or [PledgedUSD] = null
+		                then
+		                    null
+		                else
+		                    [PledgedUSD] / [GoalUSD],
+		            type nullable number
+		        ),
+		
+		    // =========================================================
+		    // 18. PLEDGE PER BACKER
+		    // =========================================================
+		
+		    #"Added PledgePerBacker" =
+		        Table.AddColumn(
+		            #"Added GoalAchievementPct",
+		            "PledgePerBacker",
+		            each
+		                if [PledgedUSD] = null
+		                    or [BackerCount] = null
+		                    or [BackerCount] = 0
+		                then
+		                    null
+		                else
+		                    [PledgedUSD] / [BackerCount],
+		            type nullable number
+		        ),
+		
+		    // =========================================================
+		    // 19. CAMPAIGN DURATION
+		    // =========================================================
+		
+		    #"Added CampaignDurationDays" =
+		        Table.AddColumn(
+		            #"Added PledgePerBacker",
+		            "CampaignDurationDays",
+		            each
+		                if [LaunchDate] = null
+		                    or [DeadlineDate] = null
+		                then
+		                    null
+		                else
+		                    Duration.Days(
+		                        [DeadlineDate] -
+		                        [LaunchDate]
+		                    ),
+		            Int64.Type
+		        ),
+		
+		    // =========================================================
+		    // 20. PRE-LAUNCH DAYS
+		    // =========================================================
+		
+		    #"Added PreLaunchDays" =
+		        Table.AddColumn(
+		            #"Added CampaignDurationDays",
+		            "PreLaunchDays",
+		            each
+		                if [CreatedDateTime] = null
+		                    or [LaunchDateTime] = null
+		                then
+		                    null
+		                else
+		                    Duration.Days(
+		                        Date.From([LaunchDateTime]) -
+		                        Date.From([CreatedDateTime])
+		                    ),
+		            Int64.Type
+		        ),
+		
+		    // =========================================================
+		    // 21. INCEPTION TO DEADLINE
+		    // =========================================================
+		
+		    #"Added InceptionToDeadlineDays" =
+		        Table.AddColumn(
+		            #"Added PreLaunchDays",
+		            "InceptionToDeadlineDays",
+		            each
+		                if [CreatedDateTime] = null
+		                    or [DeadlineDate] = null
+		                then
+		                    null
+		                else
+		                    Duration.Days(
+		                        [DeadlineDate] -
+		                        Date.From([CreatedDateTime])
+		                    ),
+		            Int64.Type
+		        ),
+		
+		    // =========================================================
+		    // 22. RENAME SOURCE-DERIVED METRICS
+		    // =========================================================
+		
+		    #"Renamed Source Metrics" =
+		        Table.RenameColumns(
+		            #"Added InceptionToDeadlineDays",
+		            {
+		                {"Pledge_per_person", "PledgePerBacker_Source"},
+		                {"Prct_goal", "GoalAchievementPct_Source"},
+		                {"Length_of_kick", "CampaignDurationDays_Source"},
+		
+		                {"City_Pop", "CityPopulation"},
+		
+		                {"Backers_as_Prct_of_Pop", "BackersPctOfPopulation"},
+		                {"Backers_as_Prct_of_Pop_YM", "BackersPctOfPopulationYM"},
+		                {"Backers_as_Prct_of_Pop_Y", "BackersPctOfPopulationY"},
+		
+		                {"Backers_in_city_Y", "CityBackersYear"},
+		                {"Backers_in_city_YM", "CityBackersYearMonth"},
+		                {"All_Time_Backers_city", "CityAllTimeBackers"},
+		
+		                {"Mean_Pledge_City", "MeanPledgeCity"},
+		                {"Mean_pledge_city_Y", "MeanPledgeCityYear"},
+		                {"Mean_pledge_city_YM", "MeanPledgeCityYearMonth"},
+		
+		                {"Days_spent_making_campign", "PreLaunchDays_Source"},
+		                {"Days_inception_to_Deadline", "InceptionToDeadlineDays_Source"},
+		
+		                {"Ex_USd", "Ex_USD_Source"}
+		            },
+		            MissingField.Ignore
+		        ),
+		
+		    // =========================================================
+		    // 23. SOURCE METADATA
+		    // =========================================================
+		
+		    #"Added Source System" =
+		        Table.AddColumn(
+		            #"Renamed Source Metrics",
+		            "Source_System",
+		            each "MasterKickstarter",
+		            type text
+		        ),
+		
+		    #"Added Snapshot Date" =
+		        Table.AddColumn(
+		            #"Added Source System",
+		            "Snapshot_Date",
+		            each #date(2017, 12, 31),
+		            type date
+		        ),
+		
+		    // =========================================================
+		    // 24. FINAL COLUMN ORDER
+		    // =========================================================
+		
+		    #"Reordered Columns" =
+		        Table.ReorderColumns(
+		            #"Added Snapshot Date",
+		            {
+		                "ProjectID",
+		                "ProjectName",
+		                "Blurb",
+		                "ProjectSlug",
+		
+		                "Category",
+		                "Subcategory",
+		
+		                "CurrencyCode",
+		                "CurrencySymbol",
+		                "CurrencyTrailingCode",
+		
+		                "CountryName",
+		                "State",
+		                "County",
+		                "City",
+		                "Latitude",
+		                "Longitude",
+		
+		                "CreatedDateTime",
+		                "LaunchDateTime",
+		                "LaunchDate",
+		                "DeadlineDateTime",
+		                "DeadlineDate",
+		                "StateChangedDateTime",
+		
+		                "GoalLocal",
+		                "PledgedLocal",
+		                "GoalUSD",
+		                "PledgedUSD",
+		
+		                "BackerCount",
+		                "ProjectStatus",
+		
+		                "CampaignDurationDays",
+		                "PreLaunchDays",
+		                "InceptionToDeadlineDays",
+		
+		                "GoalAchievementPct",
+		                "PledgePerBacker",
+		                "HasGoalUSD",
+		
+		                "StaffPickFlag",
+		                "SpotlightFlag",
+		                "DisableCommunicationFlag",
+		
+		                "CityPopulation",
+		                "BackersPctOfPopulation",
+		                "BackersPctOfPopulationYM",
+		                "BackersPctOfPopulationY",
+		
+		                "CityBackersYear",
+		                "CityBackersYearMonth",
+		                "CityAllTimeBackers",
+		
+		                "MeanPledgeCity",
+		                "MeanPledgeCityYear",
+		                "MeanPledgeCityYearMonth",
+		
+		                "PledgePerBacker_Source",
+		                "GoalAchievementPct_Source",
+		                "CampaignDurationDays_Source",
+		                "PreLaunchDays_Source",
+		                "InceptionToDeadlineDays_Source",
+		                "Ex_USD_Source",
+		
+		                "deadlineYM",
+		                "state_changed_atYM",
+		                "created_atYM",
+		                "launched_atYM",
+		
+		                "deadlineY",
+		                "state_changed_atY",
+		                "created_atY",
+		                "launched_atY",
+		
+		                "Source_System",
+		                "Snapshot_Date"
+		            },
+		            MissingField.Ignore
+		        ),
+		  #"Renamed columns 1" = Table.RenameColumns(#"Reordered Columns", {{"Ex_USD_Source", "ExchangeRateCandidate"}}),
+		  #"Capitalized each word" = Table.TransformColumns(#"Renamed columns 1", {{"ProjectStatus", each Text.Proper(_), type nullable text}}),
+		  #"Changed column type" = Table.TransformColumnTypes(#"Capitalized each word", {{"CurrencyTrailingCode", type logical}, {"deadlineYM", type text}, {"state_changed_atYM", type text}, {"created_atYM", type text}, {"launched_atYM", type text}}, "en-US"),
+		  #"Reordered columns 1" = Table.ReorderColumns(
+		    #"Changed column type",
+		    {
+		        "ProjectID",
+		        "ProjectName",
+		        "Blurb",
+		        "ProjectSlug",
+		        "Category",
+		        "Subcategory",
+		        "CurrencyCode",
+		        "CurrencySymbol",
+		        "CountryName",
+		        "State",
+		        "County",
+		        "City",
+		        "Latitude",
+		        "Longitude",
+		        "CreatedDateTime",
+		        "LaunchDateTime",
+		        "LaunchDate",
+		        "DeadlineDate",
+		        "StateChangedDateTime",
+		        "GoalLocal",
+		        "PledgedLocal",
+		        "PledgedUSD",
+		        "BackerCount",
+		        "ProjectStatus",
+		        "CampaignDurationDays",
+		        "PreLaunchDays",
+		        "InceptionToDeadlineDays",
+		        "PledgePerBacker",
+		        "GoalAchievementPct",
+		        "StaffPickFlag",
+		        "SpotlightFlag",
+		        "DisableCommunicationFlag",
+		        "Source_System",
+		        "Snapshot_Date"
+		    }
+		)
+		
 		in
-		  #"Added custom 1"
+		    #"Reordered columns 1"
 	lineageTag: b22bf779-8453-48dc-9c10-fa7a35694ee4
 	queryGroup: 02_Staging
+
+	annotation PBI_ResultType = Table
 
 expression Stg_WebRobots =
 		let

@@ -1,0 +1,47 @@
+name: CI - Code & Model Validation
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  validate-environment:
+    name: Lint & Verify Code Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Python Syntax & Compilation Check
+        run: |
+          python -m py_compile src/*.py
+
+      - name: Verify PBIP Directory Structure
+        run: |
+          test -f powerbi/kickstarter_analytics.pbip || exit 1
+          test -d powerbi/kickstarter_analytics.Report || exit 1
+          test -d powerbi/kickstarter_analytics.SemanticModel || exit 1
+          echo "PBIP Project structure verified successfully."
+
+      - name: Ensure Large Data Files Are Not Tracked
+        run: |
+          # Verify that no large raw data files are accidentally staged in git
+          if git ls-files | grep -E '\.(csv|json|gz|zip|parquet)$' | grep -v 'data/metadata/'; then
+            echo "ERROR: Large data file detected in git tracking index!"
+            exit 1
+          fi
+          echo "Zero raw data files tracked. Git hygiene verified."

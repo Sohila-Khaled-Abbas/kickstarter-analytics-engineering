@@ -1,5 +1,11 @@
-# Environments
+# ========================================
+# Kickstarter Analytics Engineering
+# Git Ignore Configuration
+# ========================================
+
+# Environments & Secrets
 .env
+.env.*
 .venv
 env/
 venv/
@@ -7,11 +13,17 @@ ENV/
 env.bak/
 venv.bak/
 
-# Python
+# Python Compilation & Artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
@@ -19,26 +31,39 @@ __pycache__/
 # ========================================
 # Power BI (Developer Mode / PBIP)
 # ========================================
-# Ignore standard binary files since we use PBIP
+# Ignore standard monolithic binary files since we use PBIP
 *.pbix
 *.pbit
 
-# Ignore local user settings and cache for PBIP
-.pbi/localSettings.json
+# Always track PBIP definitions and model files
+!powerbi/**/*.json
+!powerbi/**/*.tmdl
+!powerbi/**/*.pbir
+!powerbi/**/*.pbism
+!powerbi/*.pbip
+
+# Explicitly ignore local machine settings and cache
+**/.pbi/localSettings.json
+**/.pbi/editorSettings.json
+**/.pbi/cache.abf
 *.pbicache
 
 # ========================================
-# Data - CRITICAL
+# Large Raw Data Files - CRITICAL
 # ========================================
-# Never commit large datasets to GitHub!
-data/
-*.csv
-*.json
-*.json.gz
-*.zip
-*.parquet
+# Never commit large data files or scraped archives to GitHub!
+data/raw/
+data/extracted/
+data/**/*.csv
+data/**/*.json
+data/**/*.json.gz
+data/**/*.zip
+data/**/*.parquet
 
-# OS generated files
+# Keep metadata manifests tracked
+!data/metadata/*.csv
+
+# Operating System Files
 .DS_Store
 .DS_Store?
 ._*
@@ -46,3 +71,9 @@ data/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
+
+# IDE & Editor Configurations
+.idea/
+*.swp
+*.swo
