@@ -49,7 +49,13 @@ expression Src_Mapping =
 
 	annotation PBI_ResultType = Table
 
-expression DataFolderPath = "D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = type text]
+expression DataFolderPath =
+		"D:\courses\Data Analysis 26-27\Projects\Kickstarter Projects\data\" meta [
+		    IsParameterQuery = true,
+		    IsParameterQueryRequired = true,
+		    Type = type text,
+		    Description = "Absolute path to the project root data directory containing raw/ and metadata/ subdirectories."
+		]
 	lineageTag: 74af6427-296c-46ca-93de-9c27090f5949
 	queryGroup: 00_Parameters
 

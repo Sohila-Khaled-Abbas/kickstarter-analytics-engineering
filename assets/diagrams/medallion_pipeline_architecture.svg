@@ -1,0 +1,304 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#161B22" />
+      <stop offset="100%" stop-color="#090D13" />
+    </radialGradient>
+
+    <!-- Layer Card Gradients -->
+    <linearGradient id="bronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B45309" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#78350F" stop-opacity="0.10" />
+    </linearGradient>
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#0369A1" stop-opacity="0.10" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05CE78" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#047857" stop-opacity="0.10" />
+    </linearGradient>
+    <linearGradient id="semanticGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#6D28D9" stop-opacity="0.10" />
+    </linearGradient>
+
+    <!-- Accents -->
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#05CE78" />
+      <stop offset="100%" stop-color="#A78BFA" />
+    </linearGradient>
+
+    <!-- Filters for Glow -->
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#05CE78" />
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1280" height="720" fill="url(#bgGlow)" />
+  <rect width="1280" height="720" fill="none" stroke="#21262D" stroke-width="2" />
+
+  <!-- Grid Decoration -->
+  <pattern id="dotGrid" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+    <circle cx="2" cy="2" r="1" fill="#30363D" fill-opacity="0.3" />
+  </pattern>
+  <rect width="1280" height="720" fill="url(#dotGrid)" />
+
+  <!-- Top Header Banner -->
+  <g transform="translate(60, 45)">
+    <rect x="0" y="0" width="1160" height="60" rx="8" fill="#161B22" stroke="#30363D" stroke-width="1.5" />
+    <circle cx="35" cy="30" r="12" fill="#05CE78" />
+    <text x="35" y="34" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="12" fill="#090D13" text-anchor="middle">K</text>
+    <text x="60" y="36" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="20" fill="#F0F6FC">
+      Kickstarter Analytics Engineering — End-to-End Medallion Pipeline Architecture
+    </text>
+    <rect x="990" y="18" width="145" height="24" rx="12" fill="#05CE78" fill-opacity="0.15" stroke="#05CE78" stroke-width="1" />
+    <text x="1062" y="34" font-family="'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#05CE78" text-anchor="middle">MEDALLION + GALAXY</text>
+  </g>
+
+  <!-- ============================================================== -->
+  <!-- LAYER 1: RAW INGESTION & SOURCES -->
+  <!-- ============================================================== -->
+  <g transform="translate(60, 130)">
+    <rect x="0" y="0" width="245" height="530" rx="12" fill="#161B22" stroke="#30363D" stroke-width="1.5" filter="url(#cardShadow)" />
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="245" height="42" rx="12" fill="#21262D" />
+    <rect x="0" y="30" width="245" height="12" fill="#21262D" />
+    <circle cx="20" cy="21" r="5" fill="#F59E0B" />
+    <text x="35" y="26" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="13" fill="#F0F6FC">01 · RAW INGESTION</text>
+    <text x="225" y="25" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E" text-anchor="end">data/raw/</text>
+
+    <!-- Source Items -->
+    <!-- WebRobots -->
+    <g transform="translate(15, 60)">
+      <rect width="215" height="85" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="22" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#38BDF8">WebRobots Crawls</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">361 files (2014–2026)</text>
+      <text x="12" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">Recurring monthly scrapes</text>
+      <rect x="12" y="62" width="70" height="16" rx="4" fill="#38BDF8" fill-opacity="0.1" stroke="#38BDF8" stroke-width="0.7" />
+      <text x="47" y="73" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#38BDF8" text-anchor="middle">348k Master</text>
+    </g>
+
+    <!-- Kaggle 2018 & 2016 -->
+    <g transform="translate(15, 160)">
+      <rect width="215" height="85" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="22" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#F59E0B">Kaggle Snapshots</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">ks-projects-201801 (378k)</text>
+      <text x="12" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">ks-projects-201612 (323k)</text>
+      <rect x="12" y="62" width="95" height="16" rx="4" fill="#F59E0B" fill-opacity="0.1" stroke="#F59E0B" stroke-width="0.7" />
+      <text x="59" y="73" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#F59E0B" text-anchor="middle">Win-1252 &amp; UTF-8</text>
+    </g>
+
+    <!-- MasterKickstarter -->
+    <g transform="translate(15, 260)">
+      <rect width="215" height="85" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="22" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#A78BFA">MasterKickstarter.csv</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">167k rows · 57 attributes</text>
+      <text x="12" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">Lat/Lon, City Demographic</text>
+      <rect x="12" y="62" width="90" height="16" rx="4" fill="#A78BFA" fill-opacity="0.1" stroke="#A78BFA" stroke-width="0.7" />
+      <text x="57" y="73" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#A78BFA" text-anchor="middle">Geo &amp; Demographics</text>
+    </g>
+
+    <!-- Regional Reference -->
+    <g transform="translate(15, 360)">
+      <rect width="215" height="85" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="22" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12" fill="#34D399">Regional Benchmarks</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">County.csv (966 counties)</text>
+      <text x="12" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">Mapping.csv (50 states)</text>
+      <rect x="12" y="62" width="75" height="16" rx="4" fill="#34D399" fill-opacity="0.1" stroke="#34D399" stroke-width="0.7" />
+      <text x="49" y="73" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#34D399" text-anchor="middle">US Baselines</text>
+    </g>
+
+    <!-- Metadata Footnote -->
+    <g transform="translate(15, 465)">
+      <rect width="215" height="45" rx="6" fill="#161B22" stroke="#21262D" stroke-width="1" />
+      <text x="107" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#58A6FF" text-anchor="middle">1.2M+ Raw Observations</text>
+      <text x="107" y="34" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E" text-anchor="middle">Profiled via src/data_profiler.py</text>
+    </g>
+  </g>
+
+  <!-- Connector Line 1 -->
+  <path d="M 305 390 L 345 390" stroke="#38BDF8" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- ============================================================== -->
+  <!-- LAYER 2: BRONZE STAGING LAYER -->
+  <!-- ============================================================== -->
+  <g transform="translate(350, 130)">
+    <rect x="0" y="0" width="245" height="530" rx="12" fill="#161B22" stroke="#B45309" stroke-width="1.5" filter="url(#cardShadow)" />
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="245" height="42" rx="12" fill="#78350F" fill-opacity="0.5" />
+    <rect x="0" y="30" width="245" height="12" fill="#78350F" fill-opacity="0.5" />
+    <circle cx="20" cy="21" r="5" fill="#F59E0B" />
+    <text x="35" y="26" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="13" fill="#FEF3C7">02 · BRONZE STAGING</text>
+    <text x="225" y="25" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#FCD34D" text-anchor="end">Load = False</text>
+
+    <!-- Content Blocks -->
+    <g transform="translate(15, 60)">
+      <rect width="215" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#F59E0B">Data Hygiene &amp; Sanitization</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Strip whitespace &amp; clean text</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Drop 4 phantom comma spillover cols</text>
+      <text x="12" y="70" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Encoding normalization (1252 → UTF8)</text>
+      <text x="12" y="86" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Standardize category text names</text>
+    </g>
+
+    <g transform="translate(15, 170)">
+      <rect width="215" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#F59E0B">Type Casting &amp; Epoch Parse</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Unix integer epoch → DateTime</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Currency.Type for Goal &amp; Pledged</text>
+      <text x="12" y="70" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Int64.Type for Backers &amp; ProjectID</text>
+      <text x="12" y="86" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Extract LaunchDate &amp; DeadlineDate</text>
+    </g>
+
+    <g transform="translate(15, 280)">
+      <rect width="215" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#F59E0B">Lineage &amp; Metric Seeding</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Attach Source_System lineage</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Attach Snapshot_Date recency</text>
+      <text x="12" y="70" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Pre-calculate CampaignDurationDays</text>
+      <text x="12" y="86" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Tag HasGoalUSD boolean</text>
+    </g>
+
+    <!-- Staging Queries Box -->
+    <g transform="translate(15, 395)">
+      <rect width="215" height="115" rx="6" fill="#0D1117" stroke="#21262D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="10" fill="#D97706">Power Query M Staging Queries:</text>
+      <text x="12" y="38" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Stg_Kaggle_2016</text>
+      <text x="12" y="54" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Stg_Kaggle_2018</text>
+      <text x="12" y="70" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Stg_MasterKickstarter</text>
+      <text x="12" y="86" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Stg_WebRobots</text>
+      <text x="12" y="102" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Stg_County &amp; Stg_Mapping</text>
+    </g>
+  </g>
+
+  <!-- Connector Line 2 -->
+  <path d="M 595 390 L 635 390" stroke="#05CE78" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- ============================================================== -->
+  <!-- LAYER 3: SILVER CONFORMED LAYER -->
+  <!-- ============================================================== -->
+  <g transform="translate(640, 130)">
+    <rect x="0" y="0" width="245" height="530" rx="12" fill="#161B22" stroke="#0284C7" stroke-width="1.5" filter="url(#cardShadow)" />
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="245" height="42" rx="12" fill="#0369A1" fill-opacity="0.5" />
+    <rect x="0" y="30" width="245" height="12" fill="#0369A1" fill-opacity="0.5" />
+    <circle cx="20" cy="21" r="5" fill="#38BDF8" />
+    <text x="35" y="26" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="13" fill="#E0F2FE">03 · SILVER CONFORMED</text>
+    <text x="225" y="25" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#7DD3FC" text-anchor="end">Load = False</text>
+
+    <!-- Harmonization -->
+    <g transform="translate(15, 60)">
+      <rect width="215" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#38BDF8">Canonical Schema Union</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Conformed_Campaign_AllSources</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Map to 15 canonical columns</text>
+      <text x="12" y="70" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Filter invalid null ProjectIDs</text>
+      <text x="12" y="86" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Append 4 disparate source pipelines</text>
+    </g>
+
+    <!-- Deduplication Engine -->
+    <g transform="translate(15, 170)">
+      <rect width="215" height="115" rx="8" fill="#0D1117" stroke="#0284C7" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#38BDF8">Deduplication Engine</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#F0F6FC">Priority Hierarchy:</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">1. WebRobots (Latest Crawl)</text>
+      <text x="12" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">2. Kaggle 2018 Archive</text>
+      <text x="12" y="82" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">3. MasterKickstarter (Dec 2017)</text>
+      <text x="12" y="96" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">4. Kaggle 2016 Snapshot</text>
+      <rect x="12" y="100" width="190" height="0" />
+    </g>
+
+    <!-- Surrogate Key Generation -->
+    <g transform="translate(15, 300)">
+      <rect width="215" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#38BDF8">Surrogate Key Factory</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Table.AddIndexColumn(1, 1, Int64)</text>
+      <text x="12" y="54" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• ProjectKey, CategoryKey, LocationKey</text>
+      <text x="12" y="70" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• CurrencyKey, StatusKey, DateKey</text>
+      <text x="12" y="86" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#8B949E">• Compact integer joins for VertiPaq</text>
+    </g>
+
+    <!-- Conformed Entities Box -->
+    <g transform="translate(15, 415)">
+      <rect width="215" height="95" rx="6" fill="#0D1117" stroke="#21262D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="10" fill="#0284C7">Conformed Extracted Entities:</text>
+      <text x="12" y="38" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Conformed_Project</text>
+      <text x="12" y="54" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Conformed_Category</text>
+      <text x="12" y="70" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Conformed_Location</text>
+      <text x="12" y="86" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Conformed_Status &amp; Currency</text>
+    </g>
+  </g>
+
+  <!-- Connector Line 3 -->
+  <path d="M 885 390 L 925 390" stroke="#05CE78" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- ============================================================== -->
+  <!-- LAYER 4: GOLD GALAXY CONSTELLATION LAYER -->
+  <!-- ============================================================== -->
+  <g transform="translate(930, 130)">
+    <rect x="0" y="0" width="290" height="530" rx="12" fill="#161B22" stroke="#05CE78" stroke-width="2" filter="url(#cardShadow)" />
+    
+    <!-- Header -->
+    <rect x="0" y="0" width="290" height="42" rx="12" fill="#065F46" fill-opacity="0.6" />
+    <rect x="0" y="30" width="290" height="12" fill="#065F46" fill-opacity="0.6" />
+    <circle cx="20" cy="21" r="5" fill="#05CE78" />
+    <text x="35" y="26" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="13" fill="#D1FAE5">04 · GOLD GALAXY SCHEMA</text>
+    <text x="270" y="25" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#6EE7B7" text-anchor="end">Enable Load = True</text>
+
+    <!-- Conformed Dimensions -->
+    <g transform="translate(15, 60)">
+      <rect width="260" height="95" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#05CE78">6 Conformed Dimensions (1:*)</text>
+      <text x="12" y="38" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Dim_Project  Dim_Category  Dim_Date</text>
+      <text x="12" y="54" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">Dim_Location Dim_Currency  Dim_Status</text>
+      <text x="12" y="74" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">• Single-direction cross-filtering</text>
+      <text x="12" y="88" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">• Surrogate keys hidden from user view</text>
+    </g>
+
+    <!-- Fact Constellation -->
+    <g transform="translate(15, 170)">
+      <rect width="260" height="125" rx="8" fill="#0D1117" stroke="#05CE78" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#05CE78">Fact Constellation (Multiple Grains)</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#F0F6FC">1. Fact_Campaign</text>
+      <text x="28" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">1 row / unique project (Canonical outcome)</text>
+      <text x="12" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#F0F6FC">2. Fact_CampaignSnapshot</text>
+      <text x="28" y="82" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">1 row / project / crawl scrape (Time-series)</text>
+      <text x="12" y="98" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" fill="#F0F6FC">3. Regional Demographics</text>
+      <text x="28" y="112" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">Fact_CityMetrics, Dim_State/County</text>
+    </g>
+
+    <!-- Semantic Layer & DAX -->
+    <g transform="translate(15, 310)">
+      <rect width="260" height="95" rx="8" fill="#0D1117" stroke="#8B5CF6" stroke-width="1" />
+      <text x="12" y="20" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#A78BFA">_Measures Semantic Layer</text>
+      <text x="12" y="38" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E">30+ Governed DAX KPIs in 7 Folders:</text>
+      <text x="12" y="52" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#F0F6FC">• Total Projects &amp; Success Rate %</text>
+      <text x="12" y="66" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#F0F6FC">• Pledged USD YoY % &amp; Rolling 12M</text>
+      <text x="12" y="80" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#F0F6FC">• City Penetration &amp; Benchmark Indexes</text>
+    </g>
+
+    <!-- Power BI VertiPaq Output -->
+    <g transform="translate(15, 420)">
+      <rect width="260" height="90" rx="8" fill="#161B22" stroke="#30363D" stroke-width="1" />
+      <text x="130" y="24" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="11" fill="#F0F6FC" text-anchor="middle">Power BI Desktop &amp; PBIP Dev Mode</text>
+      <text x="130" y="42" font-family="'Segoe UI', Roboto, sans-serif" font-size="9" fill="#8B949E" text-anchor="middle">In-Memory VertiPaq Columnar Storage</text>
+      <rect x="25" y="52" width="210" height="24" rx="12" fill="#05CE78" fill-opacity="0.15" stroke="#05CE78" stroke-width="1" />
+      <text x="130" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#05CE78" text-anchor="middle">🚀 Auto-Sync Git Daemon Active</text>
+    </g>
+  </g>
+</svg>

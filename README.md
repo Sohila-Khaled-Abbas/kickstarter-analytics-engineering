@@ -68,6 +68,8 @@ Profiling results generated across `data/raw/` by `src/data_profiler.py`:
 
 ## 3. End-to-End Pipeline Architecture
 
+![Medallion Pipeline Architecture](assets/diagrams/medallion_pipeline_architecture.svg)
+
 ```mermaid
 flowchart LR
     subgraph Bronze["🥉 Bronze Layer (Raw Staging)"]
@@ -102,6 +104,8 @@ flowchart LR
 ---
 
 ## 4. The Galaxy Schema (Fact Constellation)
+
+![Galaxy Schema ERD](assets/diagrams/galaxy_schema_erd.svg)
 
 ```mermaid
 graph TD
@@ -176,6 +180,7 @@ The implementation is broken down into 9 step-by-step technical guides in [`docs
 | **06** | [**Data Quality Testing & Reconciliation**](docs/06_data_quality_testing_and_reconciliation.md) | dbt-style assertion queries in M (`99_QA`), DAX health measures, Python profiler tests. |
 | **07** | [**Power BI Visual Design & UX Playbook**](docs/07_power_bi_visual_design_and_ux_playbook.md) | Kickstarter color tokens, 5 core report page wireframes, bookmarks, tooltips, drill-throughs. |
 | **08** | [**Git, PBIP & CI/CD Deployment**](docs/08_git_pbip_and_ci_cd_deployment_workflow.md) | TMDL version control, branch flow, PR review checklist, Fabric deployment pipelines. |
+| **09** | [**System Architecture & Diagrams**](docs/09_system_architecture_diagrams.md) | High-resolution visual diagrams (Medallion flow, Galaxy schema ERD, GitOps). |
 
 ---
 
@@ -245,7 +250,20 @@ flowchart TD
 
 ---
 
-## 8. Repository Structure
+## 8. Automated Power BI GitOps & Continuous Publishing
+
+Whenever modifications are made inside Power BI Desktop, the background auto-sync daemon automatically detects file saves, stages modified TMDL/JSON files, creates an ISO timestamped commit, and publishes to GitHub:
+
+![GitOps PBIP Automation Flow](assets/diagrams/git_pbip_automation_flow.svg)
+
+### Zero-Friction Workflow:
+1. Double-click [`start_powerbi_autosync.bat`](start_powerbi_autosync.bat) (or keep the background daemon running).
+2. Edit models, DAX measures, or canvas visuals in Power BI Desktop normally.
+3. Press **`Ctrl + S`**: The daemon detects the file update, waits 6 seconds for write completion, commits, and pushes straight to GitHub!
+
+---
+
+## 9. Repository Structure
 
 ```text
 kickstarter-analytics-engineering/
@@ -295,7 +313,7 @@ kickstarter-analytics-engineering/
 
 ---
 
-## 9. Quickstart: Reproducing Locally
+## 10. Quickstart: Reproducing Locally
 
 ### 1. Clone & Set Up Python
 ```bash
@@ -325,6 +343,6 @@ python src/validate_semantic_model.py
 
 ---
 
-## 10. License
+## 11. License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

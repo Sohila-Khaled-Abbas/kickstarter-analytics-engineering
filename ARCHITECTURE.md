@@ -8,6 +8,12 @@ This document outlines the architectural principles, system blueprints, and form
 
 ## 1. System Context & Flow Architecture
 
+![Medallion Pipeline Architecture](assets/diagrams/medallion_pipeline_architecture.svg)
+
+> Full architectural blueprints and Entity Relationship Diagrams can be explored in detail in [**`docs/09_system_architecture_diagrams.md`**](docs/09_system_architecture_diagrams.md).
+
+![Galaxy Schema ERD](assets/diagrams/galaxy_schema_erd.svg)
+
 ```mermaid
 flowchart TD
     subgraph Ingestion["1. Ingestion & Pre-Processing (Python)"]

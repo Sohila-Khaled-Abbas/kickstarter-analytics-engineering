@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="100%" height="100%">
+  <defs>
+    <radialGradient id="gitBg" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#161B22" />
+      <stop offset="100%" stop-color="#0A0E14" />
+    </radialGradient>
+
+    <linearGradient id="pbiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2C811" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </linearGradient>
+
+    <linearGradient id="daemonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05CE78" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+
+    <linearGradient id="ghGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <filter id="shadowBox" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+
+    <marker id="flowArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#05CE78" />
+    </marker>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#gitBg)" />
+  <rect width="1200" height="560" fill="none" stroke="#21262D" stroke-width="2" />
+
+  <!-- Top Title -->
+  <g transform="translate(60, 35)">
+    <rect width="1080" height="50" rx="8" fill="#161B22" stroke="#30363D" stroke-width="1.5" />
+    <circle cx="30" cy="25" r="9" fill="#05CE78" />
+    <text x="30" y="29" font-family="'Segoe UI', sans-serif" font-weight="900" font-size="10" fill="#090D13" text-anchor="middle">⚡</text>
+    <text x="55" y="31" font-family="'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="16" fill="#F0F6FC">
+      Power BI Developer Mode (.pbip) — Automated GitOps &amp; Continuous Sync Architecture
+    </text>
+    <rect x="940" y="14" width="125" height="22" rx="11" fill="#05CE78" fill-opacity="0.15" stroke="#05CE78" stroke-width="1" />
+    <text x="1002" y="29" font-family="'Segoe UI', sans-serif" font-size="10" font-weight="700" fill="#05CE78" text-anchor="middle">ZERO MANUAL COMMITS</text>
+  </g>
+
+  <!-- Step 1: Power BI Desktop Save -->
+  <g transform="translate(60, 120)" filter="url(#shadowBox)">
+    <rect width="230" height="260" rx="10" fill="#161B22" stroke="#F2C811" stroke-width="1.5" />
+    <path d="M 0 10 Q 0 0 10 0 L 220 0 Q 230 0 230 10 L 230 36 L 0 36 Z" fill="url(#pbiGrad)" />
+    <text x="15" y="24" font-family="'Segoe UI', sans-serif" font-weight="700" font-size="13" fill="#090D13">1. Power BI Desktop</text>
+    <text x="215" y="23" font-family="'Segoe UI', sans-serif" font-size="9" font-weight="bold" fill="#090D13" text-anchor="end">Ctrl + S</text>
+
+    <g transform="translate(15, 52)" font-family="'Segoe UI', sans-serif" font-size="11">
+      <text x="0" y="16" fill="#F0F6FC" font-weight="600">Local Developer Saves:</text>
+      <text x="10" y="36" fill="#8B949E" font-size="10">• TMDL expressions updated</text>
+      <text x="10" y="52" fill="#8B949E" font-size="10">• Visual layout JSON modified</text>
+      <text x="10" y="68" fill="#8B949E" font-size="10">• DAX measures added</text>
+      
+      <rect x="0" y="85" width="200" height="100" rx="6" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="10" y="104" font-family="'Consolas', monospace" font-size="9" fill="#F2C811">powerbi/</text>
+      <text x="18" y="120" font-family="'Consolas', monospace" font-size="9" fill="#8B949E">├── expressions.tmdl</text>
+      <text x="18" y="136" font-family="'Consolas', monospace" font-size="9" fill="#8B949E">├── tables/*.tmdl</text>
+      <text x="18" y="152" font-family="'Consolas', monospace" font-size="9" fill="#8B949E">├── report.json</text>
+      <text x="18" y="168" font-family="'Consolas', monospace" font-size="9" fill="#8B949E">└── pages/*.json</text>
+    </g>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <path d="M 290 250 L 340 250" stroke="#05CE78" stroke-width="2" marker-end="url(#flowArrow)" />
+
+  <!-- Step 2: Auto-Sync Daemon -->
+  <g transform="translate(345, 120)" filter="url(#shadowBox)">
+    <rect width="250" height="260" rx="10" fill="#161B22" stroke="#05CE78" stroke-width="2" />
+    <path d="M 0 10 Q 0 0 10 0 L 240 0 Q 250 0 250 10 L 250 36 L 0 36 Z" fill="url(#daemonGrad)" />
+    <text x="15" y="24" font-family="'Segoe UI', sans-serif" font-weight="700" font-size="13" fill="#090D13">2. Auto-Sync Daemon</text>
+    <text x="235" y="23" font-family="'Segoe UI', sans-serif" font-size="9" font-weight="bold" fill="#090D13" text-anchor="end">BACKGROUND</text>
+
+    <g transform="translate(15, 52)" font-family="'Segoe UI', sans-serif" font-size="11">
+      <text x="0" y="16" fill="#F0F6FC" font-weight="600">src/auto_sync_powerbi.py:</text>
+      <text x="10" y="36" fill="#8B949E" font-size="10">• File system mtime watcher</text>
+      <text x="10" y="52" fill="#8B949E" font-size="10">• 6.0s debounce buffer</text>
+      <text x="10" y="68" fill="#8B949E" font-size="10">• Prevents partial-write lock</text>
+      
+      <rect x="0" y="85" width="220" height="100" rx="6" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="10" y="104" font-family="'Consolas', monospace" font-size="9" fill="#05CE78">Automated Git Sequence:</text>
+      <text x="10" y="122" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">1. git add .</text>
+      <text x="10" y="138" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">2. git diff --cached</text>
+      <text x="10" y="154" font-family="'Consolas', monospace" font-size="9" fill="#F0F6FC">3. git commit -m "auto..."</text>
+      <text x="10" y="170" font-family="'Consolas', monospace" font-size="9" fill="#05CE78">4. git push origin main</text>
+    </g>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <path d="M 595 250 L 645 250" stroke="#05CE78" stroke-width="2" marker-end="url(#flowArrow)" />
+
+  <!-- Step 3: GitHub Repository & CI -->
+  <g transform="translate(650, 120)" filter="url(#shadowBox)">
+    <rect width="240" height="260" rx="10" fill="#161B22" stroke="#38BDF8" stroke-width="1.5" />
+    <path d="M 0 10 Q 0 0 10 0 L 230 0 Q 240 0 240 10 L 240 36 L 0 36 Z" fill="url(#ghGrad)" />
+    <text x="15" y="24" font-family="'Segoe UI', sans-serif" font-weight="700" font-size="13" fill="#090D13">3. GitHub Repo &amp; CI/CD</text>
+    <text x="225" y="23" font-family="'Segoe UI', sans-serif" font-size="9" font-weight="bold" fill="#090D13" text-anchor="end">main</text>
+
+    <g transform="translate(15, 52)" font-family="'Segoe UI', sans-serif" font-size="11">
+      <text x="0" y="16" fill="#F0F6FC" font-weight="600">Automated GitHub Actions:</text>
+      <text x="10" y="36" fill="#8B949E" font-size="10">• .github/workflows/ci.yml</text>
+      <text x="10" y="52" fill="#8B949E" font-size="10">• Python syntax compile test</text>
+      <text x="10" y="68" fill="#8B949E" font-size="10">• PBIP directory integrity check</text>
+      
+      <rect x="0" y="85" width="210" height="100" rx="6" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="10" y="104" font-family="'Consolas', monospace" font-size="9" fill="#38BDF8">Git History &amp; Diffs:</text>
+      <text x="10" y="122" font-family="'Segoe UI', sans-serif" font-size="9" fill="#F0F6FC">✔ Instant version rollback</text>
+      <text x="10" y="138" font-family="'Segoe UI', sans-serif" font-size="9" fill="#F0F6FC">✔ Plain-text TMDL diffs</text>
+      <text x="10" y="154" font-family="'Segoe UI', sans-serif" font-size="9" fill="#F0F6FC">✔ Zero raw data leaks</text>
+      <text x="10" y="170" font-family="'Segoe UI', sans-serif" font-size="9" fill="#38BDF8">✔ Audit trail preserved</text>
+    </g>
+  </g>
+
+  <!-- Arrow 3 -> 4 -->
+  <path d="M 890 250 L 940 250" stroke="#A78BFA" stroke-width="2" marker-end="url(#flowArrow)" />
+
+  <!-- Step 4: Power BI Service / Fabric Deployment -->
+  <g transform="translate(945, 120)" filter="url(#shadowBox)">
+    <rect width="200" height="260" rx="10" fill="#161B22" stroke="#A78BFA" stroke-width="1.5" />
+    <path d="M 0 10 Q 0 0 10 0 L 190 0 Q 200 0 200 10 L 200 36 L 0 36 Z" fill="url(#cloudGrad)" />
+    <text x="15" y="24" font-family="'Segoe UI', sans-serif" font-weight="700" font-size="13" fill="#FFFFFF">4. Fabric Cloud</text>
+    <text x="185" y="23" font-family="'Segoe UI', sans-serif" font-size="9" fill="#EDE9FE" text-anchor="end">PROD</text>
+
+    <g transform="translate(15, 52)" font-family="'Segoe UI', sans-serif" font-size="11">
+      <text x="0" y="16" fill="#F0F6FC" font-weight="600">Service Deployment:</text>
+      <text x="10" y="36" fill="#8B949E" font-size="10">• Git integration in Fabric</text>
+      <text x="10" y="52" fill="#8B949E" font-size="10">• Sync to Dev Workspace</text>
+      <text x="10" y="68" fill="#8B949E" font-size="10">• Promotion to UAT &amp; Prod</text>
+      
+      <rect x="0" y="85" width="170" height="100" rx="6" fill="#0D1117" stroke="#30363D" stroke-width="1" />
+      <text x="10" y="104" font-family="'Segoe UI', sans-serif" font-size="9" fill="#A78BFA">Deployment Pipelines:</text>
+      <text x="10" y="122" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8B949E">1. Dev Workspace</text>
+      <text x="10" y="140" font-family="'Segoe UI', sans-serif" font-size="9" fill="#8B949E">2. Test Workspace</text>
+      <text x="10" y="158" font-family="'Segoe UI', sans-serif" font-size="9" fill="#05CE78" font-weight="bold">3. Prod Workspace</text>
+    </g>
+  </g>
+
+  <!-- Bottom Banner Explaining Continuous Sync -->
+  <g transform="translate(60, 415)">
+    <rect width="1085" height="100" rx="8" fill="#161B22" stroke="#30363D" stroke-width="1" />
+    <text x="25" y="30" font-family="'Segoe UI', sans-serif" font-weight="700" font-size="13" fill="#05CE78">How Continuous Version Control Works in Practice:</text>
+    <text x="25" y="52" font-family="'Segoe UI', sans-serif" font-size="11" fill="#C9D1D9">
+      1. Launch the watcher daemon by double-clicking <tspan fill="#58A6FF" font-family="'Consolas', monospace">start_powerbi_autosync.bat</tspan> or keep it running in the background.
+    </text>
+    <text x="25" y="70" font-family="'Segoe UI', sans-serif" font-size="11" fill="#C9D1D9">
+      2. Work inside Power BI Desktop normally: create DAX measures, adjust model relationships, or design report visuals.
+    </text>
+    <text x="25" y="88" font-family="'Segoe UI', sans-serif" font-size="11" fill="#C9D1D9">
+      3. Press <tspan fill="#F2C811" font-weight="bold">Ctrl + S</tspan>. The daemon detects the changed TMDL and JSON files, waits 6s, commits with timestamp, and pushes straight to GitHub!
+    </text>
+  </g>
+</svg>

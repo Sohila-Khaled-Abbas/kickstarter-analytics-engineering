@@ -22,7 +22,7 @@ We implement a **Galaxy Schema**, where multiple Fact tables share a unified sui
 ```mermaid
 graph TD
     subgraph Dimensions["🌌 Shared Conformed Dimensions"]
-        D_Date["Dim_Date<br/>(DAX Calendar 2009-2026)"]
+        D_Date["Dim_Date<br/>(Power Query M 2009-2026)"]
         D_Cat["Dim_Category<br/>(CategoryKey)"]
         D_Loc["Dim_Location<br/>(LocationKey)"]
         D_Curr["Dim_Currency<br/>(CurrencyKey)"]
@@ -86,9 +86,9 @@ graph TD
 - **Grain**: 1 row per campaign state.
 - **Attributes**: `StatusKey` (PK, Int64), `ProjectStatus`, `StatusGroup` ('Funded', 'In Progress', 'Unfunded'), `IsCompleted` (1/0), `IsSuccessful` (1/0).
 
-#### 6. `Dim_Date` (DAX-Generated)
+#### 6. `Dim_Date` (Power Query M — Generated)
 - **Grain**: 1 row per calendar day from Jan 1, 2009 to Dec 31, 2026.
-- **Attributes**: `DateKey` (PK, `YYYYMMDD`, Int64), `Date`, `Year`, `MonthNumber`, `MonthName`, `YearMonth`, `Quarter`, `DayOfWeek`, `DayName`, `IsWeekend`.
+- **Attributes**: `DateKey` (PK, `YYYYMMDD`, Int64), `Date`, `Year`, `MonthNumber`, `MonthName`, `MonthShort`, `YearMonth`, `QuarterNumber`, `Quarter`, `YearQuarter`, `DayOfMonth`, `DayOfWeekNumber`, `DayName`, `DayShort`, `IsWeekend`.
 
 ---
 
@@ -120,38 +120,155 @@ graph TD
 
 ---
 
-## 3. Creating the Enterprise `Dim_Date` Table in DAX
+## 3. Creating the Enterprise `Dim_Date` Table in Power Query (M Language)
 
-To support robust Time Intelligence and multi-date role-playing relationships without relying on Power BI's bloated auto-date/time hierarchy:
+> [!IMPORTANT]
+> `Dim_Date` is built entirely in **Power Query using M language** — NOT with DAX `CALENDAR()`. This approach runs at query-fold time (before VertiPaq compression), keeps the data lineage visible in the Power Query Editor GUI, and avoids the hidden DAX table overhead. Disable the Power BI auto-date/time setting: **File → Options → Data Load → uncheck "Auto date/time"**.
 
-```dax
-Dim_Date = 
-VAR MinDate = DATE(2009, 1, 1)
-VAR MaxDate = DATE(2026, 12, 31)
-RETURN
-ADDCOLUMNS(
-    CALENDAR(MinDate, MaxDate),
-    "DateKey", VALUE(FORMAT([Date], "YYYYMMDD")),
-    "Year", YEAR([Date]),
-    "MonthNumber", MONTH([Date]),
-    "MonthName", FORMAT([Date], "MMMM"),
-    "MonthShort", FORMAT([Date], "MMM"),
-    "YearMonth", FORMAT([Date], "YYYY-MM"),
-    "Quarter", "Q" & FORMAT([Date], "Q"),
-    "YearQuarter", FORMAT([Date], "YYYY") & " Q" & FORMAT([Date], "Q"),
-    "DayOfMonth", DAY([Date]),
-    "DayOfWeekNumber", WEEKDAY([Date], 2), -- 1 = Monday, 7 = Sunday
-    "DayName", FORMAT([Date], "dddd"),
-    "DayShort", FORMAT([Date], "ddd"),
-    "IsWeekend", IF(WEEKDAY([Date], 2) IN {6, 7}, 1, 0)
-)
+### Step-by-Step: Create `Dim_Date` via Advanced Editor (Power Query GUI)
+
+#### Step 1 — Open Power Query Editor
+In Power BI Desktop: **Home → Transform Data → Transform Data**.
+
+#### Step 2 — Create a New Blank Query
+In Power Query Editor: **Home → New Source → Blank Query**.
+
+#### Step 3 — Open Advanced Editor
+Right-click the new query in the Queries pane → **Advanced Editor** (or **Home → Advanced Editor**).
+
+#### Step 4 — Paste the Full M Code
+
+Replace all existing text with the following M language script:
+
+```m
+let
+    // ── Parameters ──────────────────────────────────────────────────
+    StartDate = #date(2009, 1, 1),
+    EndDate   = #date(2026, 12, 31),
+
+    // ── Generate list of days ────────────────────────────────────────
+    DayCount      = Duration.Days(EndDate - StartDate) + 1,
+    DateList      = List.Dates(StartDate, DayCount, #duration(1, 0, 0, 0)),
+    DateTable     = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}),
+
+    // ── Cast Date column to proper Date type ─────────────────────────
+    TypedDate = Table.TransformColumnTypes(DateTable, {{"Date", type date}}),
+
+    // ── DateKey (YYYYMMDD integer) ────────────────────────────────────
+    AddDateKey = Table.AddColumn(TypedDate, "DateKey",
+        each Date.Year([Date]) * 10000
+            + Date.Month([Date]) * 100
+            + Date.Day([Date]),
+        Int64.Type),
+
+    // ── Year ──────────────────────────────────────────────────────────
+    AddYear = Table.AddColumn(AddDateKey, "Year",
+        each Date.Year([Date]), Int64.Type),
+
+    // ── Month Number ──────────────────────────────────────────────────
+    AddMonthNumber = Table.AddColumn(AddYear, "MonthNumber",
+        each Date.Month([Date]), Int64.Type),
+
+    // ── Month Name (locale-aware full name) ───────────────────────────
+    AddMonthName = Table.AddColumn(AddMonthNumber, "MonthName",
+        each Date.MonthName([Date]), type text),
+
+    // ── Month Short (3-letter abbreviation) ───────────────────────────
+    AddMonthShort = Table.AddColumn(AddMonthName, "MonthShort",
+        each Text.Start(Date.MonthName([Date]), 3), type text),
+
+    // ── Year-Month label (e.g. "2024-03") ────────────────────────────
+    AddYearMonth = Table.AddColumn(AddMonthShort, "YearMonth",
+        each Text.PadStart(Text.From(Date.Year([Date])), 4, "0")
+            & "-"
+            & Text.PadStart(Text.From(Date.Month([Date])), 2, "0"),
+        type text),
+
+    // ── Quarter Number ────────────────────────────────────────────────
+    AddQuarterNumber = Table.AddColumn(AddYearMonth, "QuarterNumber",
+        each Date.QuarterOfYear([Date]), Int64.Type),
+
+    // ── Quarter Label (e.g. "Q2") ─────────────────────────────────────
+    AddQuarter = Table.AddColumn(AddQuarterNumber, "Quarter",
+        each "Q" & Text.From(Date.QuarterOfYear([Date])), type text),
+
+    // ── Year-Quarter label (e.g. "2024 Q2") ──────────────────────────
+    AddYearQuarter = Table.AddColumn(AddQuarter, "YearQuarter",
+        each Text.From(Date.Year([Date]))
+            & " Q"
+            & Text.From(Date.QuarterOfYear([Date])),
+        type text),
+
+    // ── Day of Month ──────────────────────────────────────────────────
+    AddDayOfMonth = Table.AddColumn(AddYearQuarter, "DayOfMonth",
+        each Date.Day([Date]), Int64.Type),
+
+    // ── Day of Week Number (1=Monday … 7=Sunday, ISO 8601) ────────────
+    AddDayOfWeekNumber = Table.AddColumn(AddDayOfMonth, "DayOfWeekNumber",
+        each
+            let d = Date.DayOfWeek([Date], Day.Monday) + 1
+            in d,
+        Int64.Type),
+
+    // ── Day Name (full locale-aware name) ────────────────────────────
+    AddDayName = Table.AddColumn(AddDayOfWeekNumber, "DayName",
+        each Date.DayOfWeekName([Date]), type text),
+
+    // ── Day Short (3-letter abbreviation) ────────────────────────────
+    AddDayShort = Table.AddColumn(AddDayName, "DayShort",
+        each Text.Start(Date.DayOfWeekName([Date]), 3), type text),
+
+    // ── IsWeekend flag (1 = Weekend, 0 = Weekday) ────────────────────
+    AddIsWeekend = Table.AddColumn(AddDayShort, "IsWeekend",
+        each if Date.DayOfWeek([Date], Day.Monday) >= 5 then 1 else 0,
+        Int64.Type),
+
+    // ── Final column ordering & types ────────────────────────────────
+    ReorderCols = Table.ReorderColumns(AddIsWeekend, {
+        "DateKey", "Date", "Year", "MonthNumber", "MonthName",
+        "MonthShort", "YearMonth", "QuarterNumber", "Quarter",
+        "YearQuarter", "DayOfMonth", "DayOfWeekNumber", "DayName",
+        "DayShort", "IsWeekend"
+    })
+
+in
+    ReorderCols
 ```
 
-### Mandatory Sort By Column Rules:
-- Select `MonthName` → Set **Sort by column** to `MonthNumber`.
-- Select `MonthShort` → Set **Sort by column** to `MonthNumber`.
-- Select `YearQuarter` → Set **Sort by column** to `DateKey`.
-- Mark as Date Table: Right-click `Dim_Date` → **Mark as date table** → Select `[Date]`.
+#### Step 5 — Rename the Query
+In the **Query Settings** panel on the right, rename the query from `Query1` to **`Dim_Date`**.
+
+#### Step 6 — Set "Enable Load" to True
+Right-click `Dim_Date` in the Queries pane → **Enable Load** (ensure it is checked ✅). This is the only dimension that gets loaded into VertiPaq directly from Power Query rather than being referenced from another query.
+
+#### Step 7 — Close & Apply
+Click **Home → Close & Apply** to load `Dim_Date` into the model.
+
+---
+
+### Power Query GUI Column Configuration (After Loading)
+
+In **Power BI Model View**, apply these mandatory sort-by rules:
+
+| Column | Sort By Column |
+| :--- | :--- |
+| `MonthName` | `MonthNumber` |
+| `MonthShort` | `MonthNumber` |
+| `Quarter` | `QuarterNumber` |
+| `YearQuarter` | `DateKey` |
+| `DayName` | `DayOfWeekNumber` |
+| `DayShort` | `DayOfWeekNumber` |
+
+### Mark as Date Table
+Right-click `Dim_Date` in Model View → **Mark as date table** → Select `[Date]` as the date column. This enables native Time Intelligence (e.g., `SAMEPERIODLASTYEAR`, `TOTALYTD`) to work correctly.
+
+> [!TIP]
+> **Why M over DAX for `Dim_Date`?**
+> - M runs during **query evaluation** (before model load), reducing VertiPaq refresh time.
+> - Columns are visible and editable in the **Power Query Editor GUI** — no hidden computed tables.
+> - Locale-aware functions (`Date.MonthName`, `Date.DayOfWeekName`) respect regional settings.
+> - `DateKey` is computed as a pure integer arithmetic expression — no `FORMAT()` overhead.
+> - The query is **fully foldable** against a database source if you later migrate to DirectQuery or Dataflow Gen2.
 
 ---
 
