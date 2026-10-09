@@ -10,70 +10,60 @@ table Dim_County_Metrics
 		annotation SummarizationSetBy = Automatic
 
 	column 'Mean Campaign USD'
-		dataType: double
+		dataType: string
 		lineageTag: fdc1b541-981c-4db1-80a8-60bf1474ac45
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Mean Campaign USD
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column 'Projects Per'
-		dataType: int64
-		formatString: 0
+		dataType: string
 		lineageTag: 4e4fe6b2-3640-4a89-98b6-c712f0eca08c
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Projects Per
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Mean Bakers'
-		dataType: double
+		dataType: string
 		lineageTag: 050d01a8-a52f-401c-b558-9760ae23a944
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Mean Bakers
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column 'Total Pledged'
-		dataType: int64
-		formatString: 0
+		dataType: string
 		lineageTag: 5d71a097-9a57-403e-8b09-cdb11356b0d8
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Total Pledged
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Total Backers'
-		dataType: int64
-		formatString: 0
+		dataType: string
 		lineageTag: b289baf5-ccaf-4df6-b576-1a1ea95652ea
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Total Backers
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Mean Days Building'
-		dataType: int64
-		formatString: 0
+		dataType: string
 		lineageTag: d3108fbd-ce9e-4453-a5c2-d3d32d870be5
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Mean Days Building
 
 		annotation SummarizationSetBy = Automatic
 
 	column 'Median Percent of Goal'
-		dataType: double
+		dataType: string
 		lineageTag: b302abc0-a6f8-4d43-90fd-ac8d72e01b1e
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Median Percent of Goal
 
 		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	partition Dim_County_Metrics = m
 		mode: import

@@ -1,0 +1,51 @@
+name: Release — Tag & Publish Changelog
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # trigger on semver tags: v2.1.0, v3.0.0, etc.
+
+permissions:
+  contents: write    # needed to create GitHub Releases
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # full history for changelog extraction
+
+      - name: Extract Version from Tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract Changelog Entry for This Version
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Strip the leading 'v' to match [2.1.0] format in CHANGELOG.md
+          SEM="${VERSION#v}"
+          # Extract the block between this version's heading and the next
+          BODY=$(awk "/^## \[$SEM\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+          if [ -z "$BODY" ]; then
+            BODY="See CHANGELOG.md for full release notes."
+          fi
+          # GitHub Actions multiline output
+          {
+            echo "BODY<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   ${{ steps.version.outputs.VERSION }}
+          name:       "Kickstarter Analytics Engineering ${{ steps.version.outputs.VERSION }}"
+          body:       ${{ steps.changelog.outputs.BODY }}
+          draft:      false
+          prerelease: false

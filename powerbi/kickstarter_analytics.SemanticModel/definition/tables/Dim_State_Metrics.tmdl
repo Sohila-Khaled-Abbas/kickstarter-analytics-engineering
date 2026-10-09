@@ -18,63 +18,52 @@ table Dim_State_Metrics
 		annotation SummarizationSetBy = Automatic
 
 	column TotalBackers
-		dataType: int64
-		formatString: 0
+		dataType: string
 		lineageTag: 3c5dcd44-d7fe-48a7-b51e-978f0f2fc400
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: TotalBackers
 
 		annotation SummarizationSetBy = Automatic
 
 	column MeanBackers
-		dataType: double
+		dataType: string
 		lineageTag: ec9b4d19-0de4-44aa-89fe-9f1a3f056d16
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: MeanBackers
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column MedianBackers
-		dataType: double
+		dataType: string
 		lineageTag: 3bbf729a-48bb-432d-84df-9266e006be55
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: MedianBackers
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column MeanUSD
-		dataType: double
+		dataType: string
 		lineageTag: a02d3ac9-745f-4ca3-9d0c-21cd90de083e
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: MeanUSD
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column TotalUSD
-		dataType: double
+		dataType: string
 		lineageTag: f81c93fb-244c-4e0f-a662-35f6d8eb2aad
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: TotalUSD
 
 		annotation SummarizationSetBy = Automatic
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
-
 	column MedianUSD
-		dataType: double
+		dataType: string
 		lineageTag: cc9ada1f-1435-40de-98f6-aaf7ae6540d2
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: MedianUSD
 
 		annotation SummarizationSetBy = Automatic
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	partition Dim_State_Metrics = m
 		mode: import

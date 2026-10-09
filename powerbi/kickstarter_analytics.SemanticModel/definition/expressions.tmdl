@@ -1,22 +1,15 @@
 expression Src_Master =
 		let
-		    Source =
-		        Csv.Document(
-		            File.Contents(
-		                DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"
-		            ),
-		            [
-		                Delimiter = ",",
-		                Columns = 57,
-		                QuoteStyle = QuoteStyle.Csv
-		            ]
-		        ),
-		
-		    #"Promoted Headers" =
-		        Table.PromoteHeaders(
-		            Source,
-		            [PromoteAllScalars = true]
-		        )
+		    Source = Csv.Document(
+		        File.Contents(DataFolderPath & "raw\master_kickstarter\MasterKickstarter.csv"),
+		        [
+		            Delimiter = ",",
+		            Columns = 57,
+		            Encoding = 65001,
+		            QuoteStyle = QuoteStyle.Csv
+		        ]
+		    ),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
 		in
 		    #"Promoted Headers"
 	lineageTag: 5eddc49f-9893-4353-9a74-63a32a035ab9
@@ -26,12 +19,19 @@ expression Src_Master =
 
 expression Src_County =
 		let
-		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\County.csv"), [Delimiter = ",", Columns = 9, QuoteStyle = QuoteStyle.None]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"", Int64.Type}, {"subregion", type text}, {"region", type text}, {"TotalBackers", Int64.Type}, {"MeanBackers", type number}, {"MedianBackers", type number}, {"MeanUSD", type number}, {"TotalUSD", type number}, {"MedianUSD", type number}}, "en-US"),
-		  #"Removed columns" = Table.RemoveColumns(#"Changed column type", {""})
+		    Source = Csv.Document(
+		        File.Contents(DataFolderPath & "raw\master_kickstarter\County.csv"),
+		        [
+		            Delimiter = ",",
+		            Columns = 9,
+		            Encoding = 65001,
+		            QuoteStyle = QuoteStyle.None
+		        ]
+		    ),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+		    #"Removed System Index" = Table.RemoveColumns(#"Promoted Headers", {""})
 		in
-		  #"Removed columns"
+		    #"Removed System Index"
 	lineageTag: 5c4769c1-af16-4dee-bb67-553337ee5568
 	queryGroup: 01_Sources
 
@@ -39,11 +39,18 @@ expression Src_County =
 
 expression Src_Mapping =
 		let
-		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\master_kickstarter\Mapping.csv"), [Delimiter = ",", Columns = 8, QuoteStyle = QuoteStyle.None]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"State", type text}, {"Mean Campaign USD", type number}, {"Projects Per", Int64.Type}, {"Mean Bakers", type number}, {"Total Pledged", Int64.Type}, {"Total Backers", Int64.Type}, {"Mean Days Building", Int64.Type}, {"Median Percent of Goal", type number}}, "en-US")
+		    Source = Csv.Document(
+		        File.Contents(DataFolderPath & "raw\master_kickstarter\Mapping.csv"),
+		        [
+		            Delimiter = ",",
+		            Columns = 8,
+		            Encoding = 65001,
+		            QuoteStyle = QuoteStyle.None
+		        ]
+		    ),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
 		in
-		  #"Changed column type"
+		    #"Promoted Headers"
 	lineageTag: 564fef24-df8e-4137-880b-f8d4db35a2be
 	queryGroup: 01_Sources
 
@@ -63,11 +70,18 @@ expression DataFolderPath =
 
 expression Src_Kaggle_2016 =
 		let
-		  Source = Csv.Document(File.Contents (DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"), [Delimiter = ",", Columns = 17, Encoding = 1252]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"ID ", Int64.Type}, {"name ", type text}, {"category ", type text}, {"main_category ", type text}, {"currency ", type text}, {"deadline ", type datetime}, {"goal ", Int64.Type}, {"launched ", type datetime}, {"pledged ", type number}, {"state ", type text}, {"backers ", Int64.Type}, {"country ", type text}, {"usd pledged ", type number}, {"", type text}, {"_1", type text}, {"_2", type text}, {"_3", type text}}, "en-US")
+		    Source = Csv.Document(
+		        File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201612.csv"),
+		        [
+		            Delimiter = ",",
+		            Columns = 17,
+		            Encoding = 1252,
+		            QuoteStyle = QuoteStyle.Csv
+		        ]
+		    ),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
 		in
-		  #"Changed column type"
+		    #"Promoted Headers"
 	lineageTag: 8b56fe35-b71b-40ec-a63a-1c1a5bcf9e28
 	queryGroup: 01_Sources
 
@@ -75,11 +89,18 @@ expression Src_Kaggle_2016 =
 
 expression Src_Kaggle_2018 =
 		let
-		  Source = Csv.Document(File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201801.csv"), [Delimiter = ",", Columns = 15, Encoding = 65001, QuoteStyle = QuoteStyle.None]),
-		  #"Promoted headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
-		  #"Changed column type" = Table.TransformColumnTypes(#"Promoted headers", {{"ID", Int64.Type}, {"name", type text}, {"category", type text}, {"main_category", type text}, {"currency", type text}, {"deadline", type date}, {"goal", Int64.Type}, {"launched", type datetime}, {"pledged", type number}, {"state", type text}, {"backers", Int64.Type}, {"country", type text}, {"usd pledged", type number}, {"usd_pledged_real", type number}, {"usd_goal_real", type number}}, "en-US")
+		    Source = Csv.Document(
+		        File.Contents(DataFolderPath & "raw\kickstarter_projects\ks-projects-201801.csv"),
+		        [
+		            Delimiter = ",",
+		            Columns = 15,
+		            Encoding = 65001,
+		            QuoteStyle = QuoteStyle.None
+		        ]
+		    ),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true])
 		in
-		  #"Changed column type"
+		    #"Promoted Headers"
 	lineageTag: 2e36497a-7bea-4814-aee1-df6cb8b9670d
 	queryGroup: 01_Sources
 

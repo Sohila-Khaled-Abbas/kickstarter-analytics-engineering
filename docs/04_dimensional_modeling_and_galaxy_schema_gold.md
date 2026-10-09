@@ -39,8 +39,8 @@ graph TD
     end
 
     %% Fact_Campaign Links
-    D_Date -->|LaunchDateKey (Active)| F_Camp
-    D_Date -.->|DeadlineDateKey (Inactive)| F_Camp
+    D_Date -->|"LaunchDateKey (Active)"| F_Camp
+    D_Date -.->|"DeadlineDateKey (Inactive)"| F_Camp
     D_Cat --> F_Camp
     D_Loc --> F_Camp
     D_Curr --> F_Camp
@@ -48,7 +48,7 @@ graph TD
     D_Proj --> F_Camp
 
     %% Fact_CampaignSnapshot Links
-    D_Date -->|SnapshotDateKey (Active)| F_Snap
+    D_Date -->|"SnapshotDateKey (Active)"| F_Snap
     D_Cat --> F_Snap
     D_Curr --> F_Snap
     D_Stat --> F_Snap
@@ -250,14 +250,14 @@ Click **Home → Close & Apply** to load `Dim_Date` into the model.
 
 In **Power BI Model View**, apply these mandatory sort-by rules:
 
-| Column | Sort By Column |
+"| Column | Sort By Column |
 | :--- | :--- |
 | `MonthName` | `MonthNumber` |
 | `MonthShort` | `MonthNumber` |
 | `Quarter` | `QuarterNumber` |
 | `YearQuarter` | `DateKey` |
 | `DayName` | `DayOfWeekNumber` |
-| `DayShort` | `DayOfWeekNumber` |
+| `DayShort` | `DayOfWeekNumber` |"
 
 ### Mark as Date Table
 Right-click `Dim_Date` in Model View → **Mark as date table** → Select `[Date]` as the date column. This enables native Time Intelligence (e.g., `SAMEPERIODLASTYEAR`, `TOTALYTD`) to work correctly.
@@ -276,18 +276,18 @@ Right-click `Dim_Date` in Model View → **Mark as date table** → Select `[Dat
 
 In Power BI Model View, configure relationships adhering strictly to Kimball enterprise standards:
 
-| From Table (Fact) | Foreign Key | To Table (Dim) | Primary Key | Cardinality | Cross Filter | Active State |
+"| From Table (Fact) | Foreign Key |" To Table (Dim) "| Primary Key | Cardinality | Cross Filter | Active State |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `Fact_Campaign` | `ProjectKey` | `Dim_Project` | `ProjectKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `CategoryKey` | `Dim_Category` | `CategoryKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `LocationKey` | `Dim_Location` | `LocationKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `CurrencyKey` | `Dim_Currency` | `CurrencyKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `StatusKey` | `Dim_Status` | `StatusKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `LaunchDateKey` | `Dim_Date` | `DateKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_Campaign` | `DeadlineDateKey`| `Dim_Date` | `DateKey` | Many-to-One (*:1) | Single | **Inactive** |
-| `Fact_CampaignSnapshot` | `ProjectKey` | `Dim_Project` | `ProjectKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_CampaignSnapshot` | `CategoryKey`| `Dim_Category` | `CategoryKey` | Many-to-One (*:1) | Single | **Active** |
-| `Fact_CampaignSnapshot` | `SnapshotDateKey` | `Dim_Date` | `DateKey` | Many-to-One (*:1) | Single | **Active** |
+| `Fact_Campaign` | `ProjectKey` | `Dim_Project` | `ProjectKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `CategoryKey` | `Dim_Category` | `CategoryKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `LocationKey` | `Dim_Location` | `LocationKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `CurrencyKey` | `Dim_Currency` | `CurrencyKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `StatusKey` | `Dim_Status` | `StatusKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `LaunchDateKey` | `Dim_Date` | `DateKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_Campaign` | `DeadlineDateKey`| `Dim_Date` | `DateKey` |" Many-to-One (*:1) "| Single | **Inactive** |
+| `Fact_CampaignSnapshot` | `ProjectKey` | `Dim_Project` | `ProjectKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_CampaignSnapshot` | `CategoryKey`| `Dim_Category` | `CategoryKey` |" Many-to-One (*:1) "| Single | **Active** |
+| `Fact_CampaignSnapshot` | `SnapshotDateKey` | `Dim_Date` | `DateKey` |" Many-to-One (*:1) "| Single | **Active** |
 
 > [!CAUTION]
 > **Strict Modeling Commandments**:
