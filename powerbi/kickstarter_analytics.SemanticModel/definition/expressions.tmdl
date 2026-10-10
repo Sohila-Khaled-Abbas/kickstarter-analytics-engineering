@@ -1167,25 +1167,150 @@ expression Stg_Mapping =
 
 expression Conformed_Campaign_AllSources =
 		let
-		    // 1. Select standardized columns from each staging table
+		    // 1. Define the shared output columns
 		    Cols = {
-		        "ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode",
-		        "CountryCode", "GoalUSD", "PledgedUSD", "BackerCount", "ProjectStatus",
-		        "LaunchDate", "DeadlineDate", "CampaignDurationDays", "Source_System", "Snapshot_Date"
+		        "ProjectID",
+		        "ProjectName",
+		        "Subcategory",
+		        "Category",
+		        "CurrencyCode",
+		        "CountryCode",
+		        "GoalUSD",
+		        "PledgedUSD",
+		        "BackerCount",
+		        "ProjectStatus",
+		        "LaunchDate",
+		        "DeadlineDate",
+		        "CampaignDurationDays",
+		        "Source_System",
+		        "Snapshot_Date"
 		    },
 		
-		    K16 = Table.SelectColumns(Stg_Kaggle_2016, Cols, MissingField.Ignore),
-		    K18 = Table.SelectColumns(Stg_Kaggle_2018, Cols, MissingField.Ignore),
-		    MK  = Table.SelectColumns(Stg_Master, Cols, MissingField.Ignore),
-		    WR  = Table.SelectColumns(Stg_WebRobots, Cols, MissingField.Ignore),
+		    // 2. Select only required columns and filter invalid IDs
+		    //    Types and business calculations remain in the staging queries.
+		    PrepareSource = (InputTable as table) as table =>
+		        let
+		            Selected =
+		                Table.SelectColumns(
+		                    InputTable,
+		                    Cols,
+		                    MissingField.UseNull
+		                ),
 		
-		    // 2. Append all tables
-		    #"Appended All" = Table.Combine({WR, K18, MK, K16}),
+		            ValidIDs =
+		                Table.SelectRows(
+		                    Selected,
+		                    each
+		                        try [ProjectID] <> null and [ProjectID] > 0
+		                        otherwise false
+		                )
+		        in
+		            ValidIDs,
 		
-		    // 3. Filter out invalid null ProjectIDs
-		    #"Filtered Valid IDs" = Table.SelectRows(#"Appended All", each [ProjectID] <> null)
+		    // 3. Prepare each source
+		    K16 = PrepareSource(Stg_Kaggle_2016),
+		    K18 = PrepareSource(Stg_Kaggle_2018),
+		    MK  = PrepareSource(Stg_Master),
+		    WR  = PrepareSource(Stg_WebRobots),
+		
+		    // 4. Append the prepared tables
+		    Appended =
+		        Table.Combine({WR, K18, MK, K16})
+		
 		in
-		    #"Filtered Valid IDs"
+		    Appended
 	lineageTag: 49f42196-f32c-404f-85e0-94ea14366df2
+	queryGroup: 03_Conformed
+
+expression Conformed_Campaign_Deduplicated =
+		let
+		    Source = Conformed_Campaign_AllSources,
+		
+		    // 1. Sort by recency and pledge amount descending
+		    #"Sorted Rows" = Table.Sort(
+		        Source,
+		        {
+		            {"Snapshot_Date", Order.Descending},
+		            {"PledgedUSD", Order.Descending}
+		        }
+		    ),
+		
+		    // 2. Buffer in memory to guarantee sort order retention
+		    #"Buffered Table" = Table.Buffer(#"Sorted Rows"),
+		
+		    // 3. Keep first occurrence per ProjectID
+		    #"Deduplicated Records" = Table.Distinct(#"Buffered Table", {"ProjectID"})
+		in
+		    #"Deduplicated Records"
+	lineageTag: 09ec61c9-6042-480c-a632-9bcf795ae7fc
+	queryGroup: 03_Conformed
+
+expression Conformed_Category =
+		let
+		    Source = Conformed_Campaign_Deduplicated,
+		    #"Selected Columns" = Table.SelectColumns(Source, {"Category", "Subcategory"}),
+		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
+		    #"Filtered Nulls" = Table.SelectRows(#"Distinct Rows", each [Category] <> null),
+		    #"Sorted" = Table.Sort(#"Filtered Nulls", {{"Category", Order.Ascending}, {"Subcategory", Order.Ascending}}),
+		    #"Added CategoryKey" = Table.AddIndexColumn(#"Sorted", "CategoryKey", 1, 1, Int64.Type)
+		in
+		    #"Added CategoryKey"
+	lineageTag: 07feb646-d3d4-41ab-9050-a91e17d2d3f9
+	queryGroup: 03_Conformed
+
+expression Conformed_Currency =
+		let
+		    Source = Conformed_Campaign_Deduplicated,
+		    #"Selected Columns" = Table.SelectColumns(Source, {"CurrencyCode"}),
+		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
+		    #"Filtered Nulls" = Table.SelectRows(#"Distinct Rows", each [CurrencyCode] <> null and [CurrencyCode] <> ""),
+		    #"Sorted" = Table.Sort(#"Filtered Nulls", {{"CurrencyCode", Order.Ascending}}),
+		    #"Added CurrencyKey" = Table.AddIndexColumn(#"Sorted", "CurrencyKey", 1, 1, Int64.Type),
+		    #"Added Currency Symbol" = Table.AddColumn(
+		        #"Added CurrencyKey",
+		        "CurrencySymbol",
+		        each if [CurrencyCode] = "USD" then "$"
+		             else if [CurrencyCode] = "GBP" then "£"
+		             else if [CurrencyCode] = "EUR" then "€"
+		             else if [CurrencyCode] = "CAD" then "CA$"
+		             else if [CurrencyCode] = "AUD" then "AU$"
+		             else [CurrencyCode],
+		        type text
+		    )
+		in
+		    #"Added Currency Symbol"
+	lineageTag: a6e7b2ce-cf6a-46b4-b25a-2fa3348314de
+	queryGroup: 03_Conformed
+
+expression Conformed_Status =
+		let
+		    Source = Conformed_Campaign_Deduplicated,
+		    #"Selected Columns" = Table.SelectColumns(Source, {"ProjectStatus"}),
+		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
+		    #"Sorted" = Table.Sort(#"Distinct Rows", {{"ProjectStatus", Order.Ascending}}),
+		    #"Added StatusKey" = Table.AddIndexColumn(#"Sorted", "StatusKey", 1, 1, Int64.Type),
+		    #"Added IsCompleted" = Table.AddColumn(
+		        #"Added StatusKey",
+		        "IsCompleted",
+		        each if List.Contains({"Successful", "Failed", "Canceled", "Suspended"}, [ProjectStatus]) then 1 else 0,
+		        Int64.Type
+		    ),
+		    #"Added IsSuccessful" = Table.AddColumn(
+		        #"Added IsCompleted",
+		        "IsSuccessful",
+		        each if [ProjectStatus] = "Successful" then 1 else 0,
+		        Int64.Type
+		    ),
+		    #"Added StatusGroup" = Table.AddColumn(
+		        #"Added IsSuccessful",
+		        "StatusGroup",
+		        each if [ProjectStatus] = "Successful" then "Funded"
+		             else if [ProjectStatus] = "Live" then "In Progress"
+		             else "Unfunded",
+		        type text
+		    )
+		in
+		    #"Added StatusGroup"
+	lineageTag: cd16a37f-ab27-4af0-93b6-abc996dbcf8d
 	queryGroup: 03_Conformed
 

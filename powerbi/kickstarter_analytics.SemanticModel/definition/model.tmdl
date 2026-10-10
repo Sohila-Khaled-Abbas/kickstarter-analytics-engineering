@@ -31,7 +31,7 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
-annotation PBI_QueryOrder = ["Src_Master","Src_County","Src_Mapping","Src_Kaggle_2016","Src_Kaggle_2018","Src_WebRobots_Latest","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath","Stg_Kaggle_2016","Stg_Kaggle_2018","Stg_Master","Stg_WebRobots","Stg_County","Stg_Mapping","Conformed_Campaign_AllSources"]
+annotation PBI_QueryOrder = ["Src_Master","Src_County","Src_Mapping","Src_Kaggle_2016","Src_Kaggle_2018","Src_WebRobots_Latest","Dim_State_Metrics","Dim_County_Metrics","DataFolderPath","Stg_Kaggle_2016","Stg_Kaggle_2018","Stg_Master","Stg_WebRobots","Stg_County","Stg_Mapping","Conformed_Campaign_AllSources","Conformed_Campaign_Deduplicated","Conformed_Category","Conformed_Currency","Conformed_Status"]
 
 ref table Dim_State_Metrics
 ref table Dim_County_Metrics
