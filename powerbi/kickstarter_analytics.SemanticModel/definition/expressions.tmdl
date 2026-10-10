@@ -451,23 +451,23 @@ expression Stg_Kaggle_2018 =
 
 expression Stg_Master =
 		let
-		    // =====================================================================
-		    // Kickstarter Master — cleaned, conformed Power Query
-		    // Paste into the Advanced Editor for the Stg_Master query.
-		    // Source query name in the supplied mashup is Src_Master (not Src_MasterKickstarter).
-		    // =====================================================================
+		    // Kickstarter Stg_Master
+		    // Source query: Src_Master
+		    // Performance-optimized version: header-level renaming, early column reduction, and narrow duplicate-key validation.
+		    // Removes invalid core records and preserves genuine optional source-data gaps as null.
+		    // It does not fabricate locations, flags, timestamps, or financial amounts.
 		
 		    Source = Src_Master,
 		
-		    // Snapshot_Date is a dataset coverage reference, not a verified file-upload date.
+		    // The dataset's stated coverage reference; this is not an actual refresh timestamp.
 		    SnapshotDateReference = #date(2017, 12, 31),
 		    MinValidDateTime = #datetime(2009, 1, 1, 0, 0, 0),
 		    MaxStartDateTime = #datetime(2017, 12, 31, 23, 59, 59),
 		    MaxEndDateTime = #datetime(2018, 12, 31, 23, 59, 59),
 		
-		    // ---------------------------------------------------------------------
-		    // 1. Normalize headers and remove index / blank export columns.
-		    // ---------------------------------------------------------------------
+		    // ------------------------------------------------------------------
+		    // 1. Normalize headers and remove export/index artifacts.
+		    // ------------------------------------------------------------------
 		    CleanedHeaders = Table.TransformColumnNames(
 		        Source,
 		        each Text.Trim(Text.Clean(_))
@@ -481,226 +481,235 @@ expression Stg_Master =
 		
 		    JunkColumns = List.Select(
 		        Table.ColumnNames(CleanedHeaders),
-		        (ColumnName as text) =>
+		        (ColumnName as text) as logical =>
 		            let N = Text.Lower(Text.Trim(ColumnName))
 		            in List.Contains(List.Transform(JunkColumnNames, each Text.Lower(_)), N)
 		                or Text.StartsWith(N, "unnamed:")
 		    ),
 		
-		    RemovedJunkColumns = Table.RemoveColumns(
-		        CleanedHeaders,
-		        JunkColumns,
-		        MissingField.Ignore
-		    ),
+		    RemovedJunkColumns = Table.RemoveColumns(CleanedHeaders, JunkColumns, MissingField.Ignore),
 		
-		    // ---------------------------------------------------------------------
-		    // 2. Rename the supplied dataset's fields to consistent business names.
-		    //    Source-derived metrics receive a Source prefix where a calculated
-		    //    field will be produced later, avoiding duplicate/ambiguous meanings.
-		    // ---------------------------------------------------------------------
-		    RenameMap = {
-		        {"id", "ProjectID"},
-		        {"ID", "ProjectID"},
-		        {"name", "ProjectName"},
-		        {"Name", "ProjectName"},
-		        {"blurb", "Blurb"},
-		        {"slug", "ProjectSlug"},
-		        {"status", "ProjectStatus"},
-		        {"Status", "ProjectStatus"},
-		        {"State", "StateName"},
-		        {"Categories", "Category"},
-		        {"category", "Subcategory"},
-		        {"subcategory", "Subcategory"},
-		        {"sub_category", "Subcategory"},
-		        {"Country", "CountryName"},
-		        {"country", "CountryName"},
-		        {"City", "CityName"},
-		        {"city", "CityName"},
-		        {"County", "CountyName"},
-		        {"county", "CountyName"},
-		        {"currency", "CurrencyCode"},
-		        {"Currency", "CurrencyCode"},
-		        {"currency_symbol", "CurrencySymbol"},
-		        {"currency_trailing_code", "CurrencyTrailingCode"},
-		        {"goal", "GoalLocal"},
-		        {"Goal", "GoalLocal"},
-		        {"pledged", "PledgedLocal"},
-		        {"Pledged", "PledgedLocal"},
-		        {"pledgedUSD", "PledgedUSD"},
-		        {"usd_pledged_real", "PledgedUSD"},
-		        {"usd pledged", "PledgedUSD"},
-		        {"usd_pledged", "PledgedUSD"},
-		        {"pledged_usd", "PledgedUSD"},
-		        {"usd_goal_real", "GoalUSD"},
-		        {"usd goal real", "GoalUSD"},
-		        {"goal_usd", "GoalUSD"},
-		        {"Ex_USd", "ExUSD"},
-		        {"ex_usd", "ExUSD"},
-		        {"EX_USD", "ExUSD"},
-		        {"exUSD", "ExUSD"},
-		        {"exchange_rate_usd", "ExUSD"},
-		        {"static_usd_rate", "ExUSD"},
-		        {"backers_count", "BackerCount"},
-		        {"backers", "BackerCount"},
-		        {"Backers", "BackerCount"},
-		        {"staff_pick", "StaffPickFlag"},
-		        {"staffPick", "StaffPickFlag"},
-		        {"spotLight", "SpotlightFlag"},
-		        {"spotlight", "SpotlightFlag"},
-		        {"disable_communication", "DisableCommunicationFlag"},
-		        {"created_at", "CreatedDateTime"},
-		        {"createdAt", "CreatedDateTime"},
-		        {"created", "CreatedDateTime"},
-		        {"CreatedDate", "CreatedDateTime"},
-		        {"launched_at", "LaunchDateTime"},
-		        {"launched", "LaunchDateTime"},
-		        {"Launched", "LaunchDateTime"},
-		        {"LaunchDate", "LaunchDateTime"},
-		        {"deadline", "DeadlineDateTime"},
-		        {"Deadline", "DeadlineDateTime"},
-		        {"DeadlineDate", "DeadlineDateTime"},
-		        {"state_changed_at", "StateChangedDateTime"},
-		        {"latitude", "Latitude"},
-		        {"longitude", "Longitude"},
-		        {"City_Pop", "CityPopulation"},
-		        {"city_pop", "CityPopulation"},
-		        {"deadlineTime", "DeadlineTime"},
-		        {"state_changed_atTime", "StateChangedTime"},
-		        {"created_atTime", "CreatedTime"},
-		        {"launched_atTime", "LaunchTime"},
-		        {"deadlineYM", "DeadlineYearMonth"},
-		        {"state_changed_atYM", "StateChangedYearMonth"},
-		        {"created_atYM", "CreatedYearMonth"},
-		        {"launched_atYM", "LaunchYearMonth"},
-		        {"deadlineY", "DeadlineYear"},
-		        {"state_changed_atY", "StateChangedYear"},
-		        {"created_atY", "CreatedYear"},
-		        {"launched_atY", "LaunchYear"},
-		        {"Pledge_per_person", "SourcePledgePerPerson"},
-		        {"Prct_goal", "SourceGoalAchievementPct"},
-		        {"Length_of_kick", "SourceCampaignLengthDays"},
-		        {"Backers_as_Prct_of_Pop", "BackersPctOfPopulation"},
-		        {"Backers_as_Prct_of_Pop_YM", "BackersPctOfPopulationYearMonth"},
-		        {"Backers_as_Prct_of_Pop_Y", "BackersPctOfPopulationYear"},
-		        {"Days_spent_making_campign", "DaysSpentMakingCampaign"},
-		        {"Days_inception_to_Deadline", "DaysInceptionToDeadline"},
-		        {"Backers_in_city_Y", "BackersInCityYear"},
-		        {"Backers_in_city_YM", "BackersInCityYearMonth"},
-		        {"All_Time_Backers_city", "AllTimeBackersInCity"},
-		        {"Mean_Pledge_City", "MeanPledgeCity"},
-		        {"Mean_pledge_city_Y", "MeanPledgeCityYear"},
-		        {"Mean_pledge_city_YM", "MeanPledgeCityYearMonth"}
+		    // CanonicalMap was missing in the previous version, causing:
+		    // "The import CanonicalMap matches no exports".
+		    // Each item is {canonical output column, candidate source headers}.
+		    // Candidate headers are checked in order; existing canonical columns are preserved.
+		    CanonicalMap = {
+		        {"ProjectID", {"id", "ID", "project_id", "ProjectID"}},
+		        {"ProjectName", {"name", "Name", "ProjectName"}},
+		        {"Blurb", {"blurb", "Blurb"}},
+		        {"ProjectSlug", {"slug", "ProjectSlug"}},
+		        {"ProjectStatus", {"status", "Status", "ProjectStatus"}},
+		        {"StateName", {"State", "state_name", "region_state", "StateName"}},
+		        {"Category", {"Categories", "main_category", "Main Category", "Category"}},
+		        {"Subcategory", {"category", "subcategory", "sub_category", "Subcategory"}},
+		        {"CountryName", {"Country", "country", "country_name", "CountryName"}},
+		        {"CityName", {"City", "city", "city_name", "CityName"}},
+		        {"CountyName", {"County", "county", "county_name", "CountyName"}},
+		        {"CurrencyCode", {"currency", "Currency", "CurrencyCode"}},
+		        {"CurrencySymbol", {"currency_symbol", "CurrencySymbol"}},
+		        {"CurrencyTrailingCode", {"currency_trailing_code", "CurrencyTrailingCode"}},
+		        {"GoalLocal", {"goal", "Goal", "GoalLocal"}},
+		        {"PledgedLocal", {"pledged", "Pledged", "PledgedLocal"}},
+		        {"GoalUSD", {"usd_goal_real", "usd goal real", "goal_usd", "GoalUSD"}},
+		        {"PledgedUSD", {"pledgedUSD", "usd_pledged_real", "usd pledged", "usd_pledged", "pledged_usd", "PledgedUSD"}},
+		        {"ExUSD", {"Ex_USd", "ex_usd", "EX_USD", "exUSD", "exchange_rate_usd", "static_usd_rate", "ExUSD"}},
+		        {"BackerCount", {"backers_count", "backers", "Backers", "BackerCount"}},
+		        {"StaffPickFlag", {"staff_pick", "staffPick", "StaffPickFlag"}},
+		        {"SpotlightFlag", {"spotLight", "spotlight", "SpotlightFlag"}},
+		        {"DisableCommunicationFlag", {"disable_communication", "DisableCommunicationFlag"}},
+		        {"CreatedDateTime", {"created_at", "createdAt", "created", "CreatedDate", "CreatedDateTime"}},
+		        {"LaunchDateTime", {"launched_at", "launched", "Launched", "LaunchDate", "LaunchDateTime"}},
+		        {"DeadlineDateTime", {"deadline", "Deadline", "DeadlineDate", "DeadlineDateTime"}},
+		        {"StateChangedDateTime", {"state_changed_at", "StateChangedDateTime"}},
+		        {"Latitude", {"latitude", "Latitude"}},
+		        {"Longitude", {"longitude", "Longitude"}},
+		        {"CityPopulation", {"City_Pop", "city_pop", "CityPopulation"}},
+		        {"DeadlineTime", {"deadlineTime", "DeadlineTime"}},
+		        {"StateChangedTime", {"state_changed_atTime", "StateChangedTime"}},
+		        {"CreatedTime", {"created_atTime", "CreatedTime"}},
+		        {"LaunchTime", {"launched_atTime", "LaunchTime"}},
+		        {"DeadlineYearMonth", {"deadlineYM", "DeadlineYearMonth"}},
+		        {"StateChangedYearMonth", {"state_changed_atYM", "StateChangedYearMonth"}},
+		        {"CreatedYearMonth", {"created_atYM", "CreatedYearMonth"}},
+		        {"LaunchYearMonth", {"launched_atYM", "LaunchYearMonth"}},
+		        {"DeadlineYear", {"deadlineY", "DeadlineYear"}},
+		        {"StateChangedYear", {"state_changed_atY", "StateChangedYear"}},
+		        {"CreatedYear", {"created_atY", "CreatedYear"}},
+		        {"LaunchYear", {"launched_atY", "LaunchYear"}},
+		        {"SourcePledgePerPerson", {"Pledge_per_person", "SourcePledgePerPerson"}},
+		        {"SourceGoalAchievementPct", {"Prct_goal", "SourceGoalAchievementPct"}},
+		        {"SourceCampaignLengthDays", {"Length_of_kick", "SourceCampaignLengthDays"}},
+		        {"BackersPctOfPopulation", {"Backers_as_Prct_of_Pop", "BackersPctOfPopulation"}},
+		        {"BackersPctOfPopulationYearMonth", {"Backers_as_Prct_of_Pop_YM", "BackersPctOfPopulationYearMonth"}},
+		        {"BackersPctOfPopulationYear", {"Backers_as_Prct_of_Pop_Y", "BackersPctOfPopulationYear"}},
+		        {"DaysSpentMakingCampaign", {"Days_spent_making_campign", "DaysSpentMakingCampaign"}},
+		        {"DaysInceptionToDeadline", {"Days_inception_to_Deadline", "DaysInceptionToDeadline"}},
+		        {"BackersInCityYear", {"Backers_in_city_Y", "BackersInCityYear"}},
+		        {"BackersInCityYearMonth", {"Backers_in_city_YM", "BackersInCityYearMonth"}},
+		        {"AllTimeBackersInCity", {"All_Time_Backers_city", "AllTimeBackersInCity"}},
+		        {"MeanPledgeCity", {"Mean_Pledge_City", "MeanPledgeCity"}},
+		        {"MeanPledgeCityYear", {"Mean_pledge_city_Y", "MeanPledgeCityYear"}},
+		        {"MeanPledgeCityYearMonth", {"Mean_pledge_city_YM", "MeanPledgeCityYearMonth"}}
 		    },
 		
-		    RenamedCanonicalColumns = List.Accumulate(
-		        RenameMap,
+		    // ------------------------------------------------------------------
+		    // 2. Canonicalize source fields.
+		    // Exact header matching keeps fields such as "Category" and "category"
+		    // distinct when the source uses them for different meanings.
+		    // ------------------------------------------------------------------
+		    // Rename aliases at the column-header level instead of adding a calculated
+		    // column for every field. This is substantially faster on large CSV sources.
+		    Canonicalized = List.Accumulate(
+		        CanonicalMap,
 		        RemovedJunkColumns,
-		        (CurrentTable as table, Pair as list) as table =>
-		            if Table.HasColumns(CurrentTable, Pair{0})
-		                and not Table.HasColumns(CurrentTable, Pair{1})
-		            then Table.RenameColumns(CurrentTable, {Pair}, MissingField.Ignore)
-		            else CurrentTable
+		        (CurrentTable as table, Definition as list) as table =>
+		            let
+		                TargetName = Definition{0},
+		                Aliases = Definition{1},
+		                ExistingNames = Table.ColumnNames(CurrentTable),
+		                AliasToUse = List.First(
+		                    List.Select(Aliases, (Alias as text) as logical => List.Contains(ExistingNames, Alias)),
+		                    null
+		                )
+		            in
+		                if List.Contains(ExistingNames, TargetName) then CurrentTable
+		                else if AliasToUse <> null then
+		                    Table.RenameColumns(CurrentTable, {{AliasToUse, TargetName}}, MissingField.Ignore)
+		                else CurrentTable
 		    ),
 		
-		    // If different source variants have both a source metric and a canonical
-		    // column, don't overwrite either one. The standard source schema has only
-		    // one of each such field.
+		    // Keep only columns used by this staging query before expensive row-level
+		    // cleaning. Missing expected columns are added immediately below.
+		    ReducedSourceColumns = Table.SelectColumns(
+		        Canonicalized,
+		        List.Transform(CanonicalMap, each _{0}),
+		        MissingField.UseNull
+		    ),
 		
-		    // ---------------------------------------------------------------------
-		    // 3. Cleaning functions. These return null instead of refresh-breaking
-		    //    errors; null is retained where the source value is genuinely unknown.
-		    // ---------------------------------------------------------------------
-		    CleanText = (Value as any) as nullable text =>
+		    // Ensure a stable schema even if an optional source field is absent.
+		    RequiredSchema = {
+		        {"ProjectID", type any}, {"ProjectName", type any}, {"Blurb", type any},
+		        {"ProjectSlug", type any}, {"ProjectStatus", type any}, {"StateName", type any},
+		        {"Category", type any}, {"Subcategory", type any}, {"CountryName", type any},
+		        {"CityName", type any}, {"CountyName", type any}, {"CurrencyCode", type any},
+		        {"CurrencySymbol", type any}, {"CurrencyTrailingCode", type any},
+		        {"GoalLocal", type any}, {"PledgedLocal", type any}, {"GoalUSD", type any},
+		        {"PledgedUSD", type any}, {"ExUSD", type any}, {"BackerCount", type any},
+		        {"StaffPickFlag", type any}, {"SpotlightFlag", type any}, {"DisableCommunicationFlag", type any},
+		        {"CreatedDateTime", type any}, {"LaunchDateTime", type any}, {"DeadlineDateTime", type any},
+		        {"StateChangedDateTime", type any}, {"Latitude", type any}, {"Longitude", type any},
+		        {"CityPopulation", type any}, {"SourcePledgePerPerson", type any},
+		        {"SourceGoalAchievementPct", type any}, {"SourceCampaignLengthDays", type any},
+		        {"BackersPctOfPopulation", type any}, {"BackersPctOfPopulationYearMonth", type any},
+		        {"BackersPctOfPopulationYear", type any}, {"DaysSpentMakingCampaign", type any},
+		        {"DaysInceptionToDeadline", type any}, {"BackersInCityYear", type any},
+		        {"BackersInCityYearMonth", type any}, {"AllTimeBackersInCity", type any},
+		        {"MeanPledgeCity", type any}, {"MeanPledgeCityYear", type any}, {"MeanPledgeCityYearMonth", type any}
+		    },
+		
+		    WithRequiredColumns = List.Accumulate(
+		        RequiredSchema,
+		        ReducedSourceColumns,
+		        (T as table, Definition as list) as table =>
+		            if Table.HasColumns(T, Definition{0}) then T
+		            else Table.AddColumn(T, Definition{0}, each null, Definition{1})
+		    ),
+		
+		    // ------------------------------------------------------------------
+		    // 3. Defensive cleaning functions.
+		    // ------------------------------------------------------------------
+		    CleanText = (InputValue as any) as nullable text =>
 		        let
-		            T = if Value = null then null else
-		                (try Text.Clean(Text.Trim(Text.From(Value, "en-US"))) otherwise null),
+		            T = if InputValue = null then null else (try Text.Trim(Text.Clean(Text.From(InputValue, "en-US"))) otherwise null),
 		            U = if T = null then null else Text.Upper(T)
 		        in
-		            if T = null or T = "" or List.Contains({"NA", "N/A", "NULL", "<NULL>", "NAN"}, U)
+		            if T = null or T = "" or List.Contains({"NA", "N/A", "NULL", "<NULL>", "NAN", "NAT"}, U)
 		            then null else T,
 		
-		    CleanNumber = (Value as any) as nullable number =>
-		        if Value = null then null
-		        else if Value.Is(Value, type number) then
-		            (try Number.From(Value) otherwise null)
+		    CleanNumber = (InputValue as any) as nullable number =>
+		        if InputValue = null then null
+		        else if Value.Is(InputValue, type number) then (try Number.From(InputValue) otherwise null)
 		        else
 		            let
-		                T = CleanText(Value),
-		                IsNegativeAccounting = T <> null and Text.StartsWith(T, "(") and Text.EndsWith(T, ")"),
-		                Unwrapped = if T = null then null else if IsNegativeAccounting then Text.Middle(T, 1, Text.Length(T) - 2) else T,
+		                T = CleanText(InputValue),
+		                IsAccountingNegative = T <> null and Text.StartsWith(T, "(") and Text.EndsWith(T, ")"),
+		                Unwrapped = if T = null then null else if IsAccountingNegative then Text.Middle(T, 1, Text.Length(T) - 2) else T,
 		                NoSeparators = if Unwrapped = null then null else Text.Remove(Unwrapped, {",", " ", "$", "€", "£"}),
 		                UpperText = if NoSeparators = null then null else Text.Upper(NoSeparators),
-		                NoCodes = if UpperText = null then null else List.Accumulate(
+		                NoCurrencyCodes = if UpperText = null then null else List.Accumulate(
 		                    {"USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF"},
 		                    UpperText,
 		                    (State as text, Token as text) as text => Text.Replace(State, Token, "")
 		                ),
-		                NumberText = if NoCodes = null then null else Text.Select(NoCodes, {"0".."9", "-", "+", ".", "E"}),
+		                NumberText = if NoCurrencyCodes = null then null else Text.Select(NoCurrencyCodes, {"0".."9", "-", "+", ".", "E"}),
 		                N = if NumberText = null or NumberText = "" then null else (try Number.FromText(NumberText, "en-US") otherwise null)
 		            in
-		                if N = null then null else if IsNegativeAccounting then -Number.Abs(N) else N,
+		                if N = null then null else if IsAccountingNegative then -Number.Abs(N) else N,
 		
-		    CleanNonNegative = (Value as any) as nullable number =>
-		        let N = CleanNumber(Value)
-		        in if N = null or N < 0 then null else N,
-		
-		    CleanPositive = (Value as any) as nullable number =>
-		        let N = CleanNumber(Value)
+		    CleanPositive = (InputValue as any) as nullable number =>
+		        let N = CleanNumber(InputValue)
 		        in if N = null or N <= 0 then null else N,
 		
-		    CleanInteger = (Value as any) as nullable number =>
-		        let N = CleanNumber(Value)
-		        in if N = null or Number.RoundDown(N) <> N then null else try Int64.From(N) otherwise null,
-		
-		    CleanNonNegativeInteger = (Value as any) as nullable number =>
-		        let N = CleanInteger(Value)
+		    CleanNonNegative = (InputValue as any) as nullable number =>
+		        let N = CleanNumber(InputValue)
 		        in if N = null or N < 0 then null else N,
 		
-		    CleanLogical = (Value as any) as nullable logical =>
-		        let T = CleanText(Value), U = if T = null then null else Text.Upper(T)
-		        in if Value.Is(Value, type logical) then Value
-		           else if List.Contains({"TRUE", "T", "YES", "Y", "1"}, U) then true
-		           else if List.Contains({"FALSE", "F", "NO", "N", "0"}, U) then false
-		           else null,
+		    CleanNonNegativeInteger = (InputValue as any) as nullable number =>
+		        let N = CleanNumber(InputValue)
+		        in if N = null or N < 0 or Number.RoundDown(N) <> N then null else try Int64.From(N) otherwise null,
 		
-		    NormalizeStatus = (Value as any) as nullable text =>
-		        let T = CleanText(Value), L = if T = null then null else Text.Lower(T)
-		        in if L = null then null
-		           else if L = "successful" then "Successful"
-		           else if L = "failed" then "Failed"
-		           else if List.Contains({"canceled", "cancelled"}, L) then "Canceled"
-		           else if L = "live" then "Live"
-		           else if L = "suspended" then "Suspended"
-		           else if L = "undefined" then "Undefined"
-		           else Text.Proper(L),
-		
-		    NormalizeSlug = (Value as any) as nullable text =>
+		    CleanLogical = (InputValue as any) as nullable logical =>
 		        let
-		            T = CleanText(Value),
+		            T = CleanText(InputValue),
+		            U = if T = null then null else Text.Upper(T)
+		        in
+		            if Value.Is(InputValue, type logical) then InputValue
+		            else if List.Contains({"TRUE", "T", "YES", "Y", "1"}, U) then true
+		            else if List.Contains({"FALSE", "F", "NO", "N", "0"}, U) then false
+		            else null,
+		
+		    NormalizeStatus = (InputValue as any) as nullable text =>
+		        let
+		            T = CleanText(InputValue),
+		            L = if T = null then null else Text.Lower(T)
+		        in
+		            if L = "successful" then "Successful"
+		            else if L = "failed" then "Failed"
+		            else if List.Contains({"canceled", "cancelled"}, L) then "Canceled"
+		            else if L = "live" then "Live"
+		            else if L = "suspended" then "Suspended"
+		            else if L = "undefined" then "Undefined"
+		            else null,
+		
+		    NormalizeSlug = (InputValue as any) as nullable text =>
+		        let
+		            T = CleanText(InputValue),
 		            L = if T = null then null else Text.Lower(T),
 		            Replaced = if L = null then null else Text.Replace(Text.Replace(L, " ", "-"), "_", "-"),
 		            Collapsed = if Replaced = null then null else List.Accumulate({1..10}, Replaced, (State as text, I as number) as text => Text.Replace(State, "--", "-")),
 		            Result = if Collapsed = null then null else Text.Trim(Collapsed, {"-"})
 		        in
-		            if Result = "" then null else Result,
+		            if Result = null or Result = "" then null else Result,
 		
-		    ParseDateTime = (Value as any) as nullable datetime =>
+		    ParseDateTime = (InputValue as any) as nullable datetime =>
 		        let
-		            IsDT = Value.Is(Value, type datetime),
-		            IsDTZ = Value.Is(Value, type datetimezone),
-		            IsD = Value.Is(Value, type date),
-		            T = CleanText(Value),
-		            N = if IsDT or IsDTZ or IsD then null else if Value.Is(Value, type number) then (try Number.From(Value) otherwise null) else if T = null then null else (try Number.FromText(T, "en-US") otherwise null),
+		            IsDateTime = Value.Is(InputValue, type datetime),
+		            IsDateTimeZone = Value.Is(InputValue, type datetimezone),
+		            IsDate = Value.Is(InputValue, type date),
+		            T = CleanText(InputValue),
+		            N = if IsDateTime or IsDateTimeZone or IsDate then null
+		                else if Value.Is(InputValue, type number) then (try Number.From(InputValue) otherwise null)
+		                else if T = null then null else (try Number.FromText(T, "en-US") otherwise null),
 		            Parsed =
-		                if Value = null then null
-		                else if IsDT then DateTime.From(Value)
-		                else if IsDTZ then DateTimeZone.RemoveZone(Value)
-		                else if IsD then DateTime.From(Value)
+		                if InputValue = null then null
+		                else if IsDateTime then DateTime.From(InputValue)
+		                else if IsDateTimeZone then DateTimeZone.RemoveZone(InputValue)
+		                else if IsDate then DateTime.From(InputValue)
 		                else if N <> null and Number.Abs(N) >= 100000000000 then
 		                    (try #datetime(1970, 1, 1, 0, 0, 0) + #duration(0, 0, 0, N / 1000) otherwise null)
 		                else if N <> null and Number.Abs(N) >= 1000000000 then
 		                    (try #datetime(1970, 1, 1, 0, 0, 0) + #duration(0, 0, 0, N) otherwise null)
-		                else if N <> null and N >= 30000 and N <= 50000 then
+		                else if N <> null and N >= 30000 and N <= 60000 then
 		                    (try #datetime(1899, 12, 30, 0, 0, 0) + #duration(0, 0, 0, N * 86400) otherwise null)
 		                else if N <> null then null
 		                else if T = null then null
@@ -708,373 +717,296 @@ expression Stg_Master =
 		        in
 		            Parsed,
 		
-		    CleanHistoricalDateTime = (Value as any, Maximum as datetime) as nullable datetime =>
-		        let D = ParseDateTime(Value)
+		    CleanHistoricalDateTime = (InputValue as any, Maximum as datetime) as nullable datetime =>
+		        let D = ParseDateTime(InputValue)
 		        in if D = null or D < MinValidDateTime or D > Maximum then null else D,
 		
-		    CleanTimeValue = (Value as any) as nullable time =>
-		        if Value = null then null
-		        else if Value.Is(Value, type time) then Time.From(Value)
-		        else if Value.Is(Value, type datetime) or Value.Is(Value, type datetimezone) or Value.Is(Value, type date) then (try Time.From(Value) otherwise null)
-		        else
-		            let
-		                T = CleanText(Value),
-		                N = CleanNumber(Value),
-		                Parsed = if N <> null and N >= 0 and N < 1 then (try Time.From(N) otherwise null)
-		                         else if T = null then null
-		                         else (try Time.FromText(T, [Culture = "en-US"]) otherwise (try Time.FromText(T, [Culture = "en-GB"]) otherwise (try Time.From(DateTime.FromText(T, [Culture = "en-US"])) otherwise null)))
-		            in Parsed,
-		
-		    CleanYearMonth = (Value as any) as nullable date =>
-		        if Value = null then null
-		        else if Value.Is(Value, type date) or Value.Is(Value, type datetime) or Value.Is(Value, type datetimezone) then (try Date.StartOfMonth(Date.From(Value)) otherwise null)
-		        else
-		            let
-		                T = CleanText(Value),
-		                N = CleanNumber(Value),
-		                NumericYM = if N <> null and N >= 190001 and N <= 209912 and Number.RoundDown(N) = N then let Y = Number.RoundDown(N / 100), M = Number.Mod(N, 100) in (try #date(Y, M, 1) otherwise null) else null,
-		                PatternYM = if T <> null and Text.Length(T) >= 7 and List.Contains({"-", "/"}, Text.Middle(T, 4, 1)) then (try #date(Number.FromText(Text.Start(T, 4)), Number.FromText(Text.Range(T, 5, 2)), 1) otherwise null) else null,
-		                ParsedDate = if T = null then null else (try Date.FromText(T, [Culture = "en-US"]) otherwise (try Date.FromText(T, [Culture = "en-GB"]) otherwise null)),
-		                Candidate = if NumericYM <> null then NumericYM else if PatternYM <> null then PatternYM else if ParsedDate <> null then Date.StartOfMonth(ParsedDate) else null
-		            in
-		                if Candidate = null then null
-		                else if Date.Year(Candidate) < 2009 or Date.Year(Candidate) > 2018 then null
-		                else Date.StartOfMonth(Candidate),
-		
-		    CleanYearValue = (Value as any) as nullable number =>
-		        if Value = null then null
-		        else if Value.Is(Value, type date) or Value.Is(Value, type datetime) or Value.Is(Value, type datetimezone) then (try Date.Year(Date.From(Value)) otherwise null)
-		        else
-		            let
-		                N = CleanNumber(Value), T = CleanText(Value),
-		                ParsedDate = if T = null then null else (try Date.FromText(T, [Culture = "en-US"]) otherwise (try Date.FromText(T, [Culture = "en-GB"]) otherwise null))
-		            in if N <> null and N >= 2009 and N <= 2018 and Number.RoundDown(N) = N then Int64.From(N) else if ParsedDate <> null and Date.Year(ParsedDate) >= 2009 and Date.Year(ParsedDate) <= 2018 then Date.Year(ParsedDate) else null,
-		
-		    // ---------------------------------------------------------------------
-		    // 4. Ensure the stable core schema exists. Missing source attributes are
-		    //    flagged; they are not replaced with fabricated business data.
-		    // ---------------------------------------------------------------------
-		    RequiredColumns = {
-		        {"ProjectID", type nullable number}, {"ProjectName", type nullable text},
-		        {"Blurb", type nullable text}, {"ProjectSlug", type nullable text},
-		        {"Category", type nullable text}, {"Subcategory", type nullable text},
-		        {"ProjectStatus", type nullable text}, {"CurrencyCode", type nullable text},
-		        {"CurrencySymbol", type nullable text}, {"CurrencyTrailingCode", type nullable text},
-		        {"CountryName", type nullable text}, {"CityName", type nullable text},
-		        {"CountyName", type nullable text}, {"StateName", type nullable text},
-		        {"GoalLocal", type nullable number}, {"PledgedLocal", type nullable number},
-		        {"GoalUSD", type nullable number}, {"PledgedUSD", type nullable number},
-		        {"ExUSD", type nullable number}, {"BackerCount", type nullable number},
-		        {"StaffPickFlag", type nullable logical}, {"SpotlightFlag", type nullable logical},
-		        {"DisableCommunicationFlag", type nullable logical},
-		        {"CreatedDateTime", type nullable datetime}, {"LaunchDateTime", type nullable datetime},
-		        {"DeadlineDateTime", type nullable datetime}, {"StateChangedDateTime", type nullable datetime},
-		        {"Latitude", type nullable number}, {"Longitude", type nullable number},
-		        {"CityPopulation", type nullable number}
-		    },
-		
-		    WithRequiredColumns = List.Accumulate(
-		        RequiredColumns,
-		        RenamedCanonicalColumns,
-		        (T as table, Definition as list) as table =>
-		            if Table.HasColumns(T, Definition{0}) then T
-		            else Table.AddColumn(T, Definition{0}, each null, Definition{1})
-		    ),
-		
-		    // Clean source strings and preserve true missing values as null.
+		    // ------------------------------------------------------------------
+		    // 4. Clean text, status, currencies, metrics, dates, flags and geography.
+		    // ------------------------------------------------------------------
 		    TextColumns = {
-		        "ProjectName", "Blurb", "ProjectSlug", "Category", "Subcategory",
-		        "CurrencyCode", "CurrencySymbol", "CurrencyTrailingCode", "CountryName",
-		        "CityName", "CountyName", "StateName"
+		        "ProjectName", "Blurb", "ProjectSlug", "StateName", "Category", "Subcategory",
+		        "CountryName", "CityName", "CountyName", "CurrencyCode", "CurrencySymbol", "CurrencyTrailingCode"
 		    },
-		    ExistingTextColumns = List.Intersect({TextColumns, Table.ColumnNames(WithRequiredColumns)}),
-		    TextTransforms = List.Transform(ExistingTextColumns, (C as text) => {C, each CleanText(_), type nullable text}),
-		    CleanedText = Table.TransformColumns(WithRequiredColumns, TextTransforms, null, MissingField.Ignore),
-		
-		    NormalizedStatus = Table.TransformColumns(
-		        CleanedText,
-		        {{"ProjectStatus", each NormalizeStatus(_), type nullable text}},
+		    CleanedText = Table.TransformColumns(
+		        WithRequiredColumns,
+		        List.Transform(TextColumns, (C as text) => {C, each CleanText(_), type nullable text}),
 		        null,
 		        MissingField.Ignore
 		    ),
-		    NormalizedSlug = Table.TransformColumns(
-		        NormalizedStatus,
-		        {{"ProjectSlug", each NormalizeSlug(_), type nullable text}},
-		        null,
-		        MissingField.Ignore
-		    ),
-		    NormalizedCurrency = Table.TransformColumns(
-		        NormalizedSlug,
-		        {{"CurrencyCode", each if _ = null then null else Text.Upper(Text.Trim(_)), type nullable text}},
-		        null,
-		        MissingField.Ignore
-		    ),
-		    AddedProjectSlugDisplay = Table.AddColumn(
-		        NormalizedCurrency,
-		        "ProjectSlugDisplay",
-		        each if [ProjectSlug] = null then null else Text.Proper(Text.Replace([ProjectSlug], "-", " ")),
-		        type nullable text
+		    CleanedStatus = Table.TransformColumns(CleanedText, {{"ProjectStatus", each NormalizeStatus(_), type nullable text}}),
+		    CleanedSlug = Table.TransformColumns(CleanedStatus, {{"ProjectSlug", each NormalizeSlug(_), type nullable text}}),
+		    CleanedCurrency = Table.TransformColumns(
+		        CleanedSlug,
+		        {{"CurrencyCode", each
+		            let C = if _ = null then null else Text.Upper(Text.Trim(_))
+		            in if C <> null and Text.Length(C) = 3 and Text.Select(C, {"A".."Z"}) = C then C else null,
+		          type nullable text}}
 		    ),
 		
-		    // ---------------------------------------------------------------------
-		    // 5. Capture original dates for diagnostics, then parse and validate them.
-		    // ---------------------------------------------------------------------
-		    DateColumns = {"CreatedDateTime", "LaunchDateTime", "DeadlineDateTime", "StateChangedDateTime"},
-		    StoredRawDates = Table.AddColumn(
-		        AddedProjectSlugDisplay,
-		        "__RawDateValues",
-		        each Record.SelectFields(_, DateColumns, MissingField.UseNull),
-		        type record
-		    ),
-		    DateTransforms = {
-		        {"CreatedDateTime", each CleanHistoricalDateTime(_, MaxStartDateTime), type nullable datetime},
-		        {"LaunchDateTime", each CleanHistoricalDateTime(_, MaxStartDateTime), type nullable datetime},
-		        {"DeadlineDateTime", each CleanHistoricalDateTime(_, MaxEndDateTime), type nullable datetime},
-		        {"StateChangedDateTime", each CleanHistoricalDateTime(_, MaxEndDateTime), type nullable datetime}
+		    NumericColumns = {
+		        "ProjectID", "GoalLocal", "PledgedLocal", "GoalUSD", "PledgedUSD", "ExUSD", "BackerCount",
+		        "Latitude", "Longitude", "CityPopulation", "SourcePledgePerPerson", "SourceGoalAchievementPct",
+		        "SourceCampaignLengthDays", "BackersPctOfPopulation", "BackersPctOfPopulationYearMonth",
+		        "BackersPctOfPopulationYear", "DaysSpentMakingCampaign", "DaysInceptionToDeadline",
+		        "BackersInCityYear", "BackersInCityYearMonth", "AllTimeBackersInCity", "MeanPledgeCity",
+		        "MeanPledgeCityYear", "MeanPledgeCityYearMonth"
 		    },
-		    CleanedDates = Table.TransformColumns(StoredRawDates, DateTransforms, null, MissingField.Ignore),
+		    CleanedNumbers = Table.TransformColumns(
+		        CleanedCurrency,
+		        List.Transform(NumericColumns, (C as text) => {C, each CleanNumber(_), type nullable number}),
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidatedCoreNumbers = Table.TransformColumns(
+		        CleanedNumbers,
+		        {
+		            {"ProjectID", each let N = CleanNonNegativeInteger(_) in if N = null or N = 0 then null else N, Int64.Type},
+		            {"GoalLocal", each CleanPositive(_), type nullable number},
+		            {"PledgedLocal", each CleanNonNegative(_), type nullable number},
+		            {"GoalUSD", each CleanPositive(_), type nullable number},
+		            {"PledgedUSD", each CleanNonNegative(_), type nullable number},
+		            {"ExUSD", each CleanPositive(_), type nullable number},
+		            {"BackerCount", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"CityPopulation", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"SourceCampaignLengthDays", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"DaysSpentMakingCampaign", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"DaysInceptionToDeadline", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"BackersInCityYear", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"BackersInCityYearMonth", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"AllTimeBackersInCity", each CleanNonNegativeInteger(_), Int64.Type},
+		            {"SourcePledgePerPerson", each CleanNonNegative(_), type nullable number},
+		            {"SourceGoalAchievementPct", each CleanNonNegative(_), type nullable number},
+		            {"BackersPctOfPopulation", each CleanNonNegative(_), type nullable number},
+		            {"BackersPctOfPopulationYearMonth", each CleanNonNegative(_), type nullable number},
+		            {"BackersPctOfPopulationYear", each CleanNonNegative(_), type nullable number},
+		            {"MeanPledgeCity", each CleanNonNegative(_), type nullable number},
+		            {"MeanPledgeCityYear", each CleanNonNegative(_), type nullable number},
+		            {"MeanPledgeCityYearMonth", each CleanNonNegative(_), type nullable number},
+		            {"Latitude", each let N = CleanNumber(_) in if N = null or N < -90 or N > 90 then null else N, type nullable number},
+		            {"Longitude", each let N = CleanNumber(_) in if N = null or N < -180 or N > 180 then null else N, type nullable number}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
+		    CleanedFlags = Table.TransformColumns(
+		        ValidatedCoreNumbers,
+		        {
+		            {"StaffPickFlag", each CleanLogical(_), type nullable logical},
+		            {"SpotlightFlag", each CleanLogical(_), type nullable logical},
+		            {"DisableCommunicationFlag", each CleanLogical(_), type nullable logical}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
 		
-		    DateQuality = Table.AddColumn(
+		    CleanedDates = Table.TransformColumns(
+		        CleanedFlags,
+		        {
+		            {"CreatedDateTime", each CleanHistoricalDateTime(_, MaxStartDateTime), type nullable datetime},
+		            {"LaunchDateTime", each CleanHistoricalDateTime(_, MaxStartDateTime), type nullable datetime},
+		            {"DeadlineDateTime", each CleanHistoricalDateTime(_, MaxEndDateTime), type nullable datetime},
+		            {"StateChangedDateTime", each CleanHistoricalDateTime(_, MaxEndDateTime), type nullable datetime}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
+		
+		    // Drop structurally invalid campaign dates. These are not silently repaired.
+		    ValidChronology = Table.SelectRows(
 		        CleanedDates,
-		        "DateQualityFlag",
+		        each [CreatedDateTime] <> null
+		            and [LaunchDateTime] <> null
+		            and [DeadlineDateTime] <> null
+		            and [LaunchDateTime] >= [CreatedDateTime]
+		            and [DeadlineDateTime] >= [LaunchDateTime]
+		    ),
+		
+		    // Prevent half-populated coordinate pairs from being interpreted as a location.
+		    AddValidLatitude = Table.AddColumn(
+		        ValidChronology,
+		        "__LatitudeValidated",
+		        each if [Latitude] <> null and [Longitude] <> null then [Latitude] else null,
+		        type nullable number
+		    ),
+		    AddValidLongitude = Table.AddColumn(
+		        AddValidLatitude,
+		        "__LongitudeValidated",
+		        each if [Latitude] <> null and [Longitude] <> null then [Longitude] else null,
+		        type nullable number
+		    ),
+		    DropOriginalCoordinates = Table.RemoveColumns(AddValidLongitude, {"Latitude", "Longitude"}),
+		    RestoreCoordinates = Table.RenameColumns(
+		        DropOriginalCoordinates,
+		        {{"__LatitudeValidated", "Latitude"}, {"__LongitudeValidated", "Longitude"}}
+		    ),
+		
+		    // ------------------------------------------------------------------
+		    // 5. Calculate USD amounts, prioritizing source USD values.
+		    // ExUSD is treated as USD per one unit of local currency, matching the
+		    // convention documented in the supplied query. Confirm that convention
+		    // against your source if you intend to use exchange-rate fallbacks.
+		    // ------------------------------------------------------------------
+		    AddGoalUSDCalc = Table.AddColumn(
+		        RestoreCoordinates,
+		        "__GoalUSD_Calc",
 		        each
 		            let
-		                CurrentRow = _,
-		                R = CurrentRow[__RawDateValues],
-		                InvalidDateIssues = List.RemoveNulls(List.Transform(DateColumns, (C as text) =>
-		                    let Raw = Record.FieldOrDefault(R, C, null), Parsed = Record.FieldOrDefault(CurrentRow, C, null)
-		                    in if CleanText(Raw) <> null and Parsed = null then "Invalid/out-of-range: " & C else null)),
-		                MissingCoreDateIssues = List.RemoveNulls({
-		                    if CurrentRow[CreatedDateTime] = null then "Missing/invalid: CreatedDateTime" else null,
-		                    if CurrentRow[LaunchDateTime] = null then "Missing/invalid: LaunchDateTime" else null,
-		                    if CurrentRow[DeadlineDateTime] = null then "Missing/invalid: DeadlineDateTime" else null
-		                }),
-		                ChronologyIssues = List.RemoveNulls({
-		                    if CurrentRow[CreatedDateTime] <> null and CurrentRow[LaunchDateTime] <> null and CurrentRow[LaunchDateTime] < CurrentRow[CreatedDateTime] then "Launch before creation" else null,
-		                    if CurrentRow[LaunchDateTime] <> null and CurrentRow[DeadlineDateTime] <> null and CurrentRow[DeadlineDateTime] < CurrentRow[LaunchDateTime] then "Deadline before launch" else null
-		                }),
-		                Issues = List.Combine({InvalidDateIssues, MissingCoreDateIssues, ChronologyIssues})
-		            in if List.IsEmpty(Issues) then "OK" else Text.Combine(Issues, "; "),
-		        type text
-		    ),
-		
-		    ValidatedLaunch = Table.AddColumn(
-		        DateQuality,
-		        "__LaunchValidated",
-		        each if [LaunchDateTime] <> null and [CreatedDateTime] <> null and [LaunchDateTime] < [CreatedDateTime] then null else [LaunchDateTime],
-		        type nullable datetime
-		    ),
-		    DropLaunch = Table.RemoveColumns(ValidatedLaunch, {"LaunchDateTime"}),
-		    RestoreLaunch = Table.RenameColumns(DropLaunch, {{"__LaunchValidated", "LaunchDateTime"}}),
-		    ValidatedDeadline = Table.AddColumn(
-		        RestoreLaunch,
-		        "__DeadlineValidated",
-		        each if [DeadlineDateTime] <> null and [LaunchDateTime] <> null and [DeadlineDateTime] < [LaunchDateTime] then null else [DeadlineDateTime],
-		        type nullable datetime
-		    ),
-		    DropDeadline = Table.RemoveColumns(ValidatedDeadline, {"DeadlineDateTime"}),
-		    RestoreDeadline = Table.RenameColumns(DropDeadline, {{"__DeadlineValidated", "DeadlineDateTime"}}),
-		    DropRawDateRecord = Table.RemoveColumns(RestoreDeadline, {"__RawDateValues"}),
-		
-		    // ---------------------------------------------------------------------
-		    // 6. Correct numeric, boolean, geographic and derived-feature data types.
-		    // ---------------------------------------------------------------------
-		    NumericCoreTransforms = {
-		        {"ProjectID", each let N = CleanInteger(_) in if N = null or N <= 0 then null else N, Int64.Type},
-		        {"GoalLocal", each CleanPositive(_), type nullable number},
-		        {"PledgedLocal", each CleanNonNegative(_), type nullable number},
-		        {"GoalUSD", each CleanPositive(_), Currency.Type},
-		        {"PledgedUSD", each CleanNonNegative(_), Currency.Type},
-		        {"ExUSD", each CleanPositive(_), type nullable number},
-		        {"BackerCount", each CleanNonNegativeInteger(_), Int64.Type},
-		        {"Latitude", each let N = CleanNumber(_) in if N = null or N < -90 or N > 90 then null else N, type nullable number},
-		        {"Longitude", each let N = CleanNumber(_) in if N = null or N < -180 or N > 180 then null else N, type nullable number},
-		        {"CityPopulation", each CleanNonNegativeInteger(_), Int64.Type}
-		    },
-		    CleanedNumericCore = Table.TransformColumns(DropRawDateRecord, NumericCoreTransforms, null, MissingField.Ignore),
-		
-		    BooleanTransforms = {
-		        {"StaffPickFlag", each CleanLogical(_), type nullable logical},
-		        {"SpotlightFlag", each CleanLogical(_), type nullable logical},
-		        {"DisableCommunicationFlag", each CleanLogical(_), type nullable logical}
-		    },
-		    CleanedBooleans = Table.TransformColumns(CleanedNumericCore, BooleanTransforms, null, MissingField.Ignore),
-		
-		    // Derived calendar feature typing; YearMonth is a date set to the first day
-		    // of the relevant month, so Power BI can use it for proper time intelligence.
-		    TimeFeatureNames = {"DeadlineTime", "StateChangedTime", "CreatedTime", "LaunchTime"},
-		    ExistingTimeFeatures = List.Intersect({TimeFeatureNames, Table.ColumnNames(CleanedBooleans)}),
-		    TypedTimeFeatures = Table.TransformColumns(
-		        CleanedBooleans,
-		        List.Transform(ExistingTimeFeatures, (C as text) => {C, each CleanTimeValue(_), type nullable time}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    YearMonthFeatureNames = {
-		        "DeadlineYearMonth", "StateChangedYearMonth", "CreatedYearMonth", "LaunchYearMonth"
-		    },
-		    ExistingYearMonthFeatures = List.Intersect({YearMonthFeatureNames, Table.ColumnNames(TypedTimeFeatures)}),
-		    TypedYearMonthFeatures = Table.TransformColumns(
-		        TypedTimeFeatures,
-		        List.Transform(ExistingYearMonthFeatures, (C as text) => {C, each CleanYearMonth(_), type nullable date}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    YearFeatureNames = {
-		        "DeadlineYear", "StateChangedYear", "CreatedYear", "LaunchYear"
-		    },
-		    ExistingYearFeatures = List.Intersect({YearFeatureNames, Table.ColumnNames(TypedYearMonthFeatures)}),
-		    TypedYearFeatures = Table.TransformColumns(
-		        TypedYearMonthFeatures,
-		        List.Transform(ExistingYearFeatures, (C as text) => {C, each CleanYearValue(_), Int64.Type}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    // The source stores these metrics as numeric values. Do not apply percent
-		    // formatting blindly because the source scale (0.25 vs 25) is not specified.
-		    DecimalFeatureNames = {
-		        "SourcePledgePerPerson", "SourceGoalAchievementPct", "BackersPctOfPopulation",
-		        "BackersPctOfPopulationYear", "BackersPctOfPopulationYearMonth"
-		    },
-		    ExistingDecimalFeatures = List.Intersect({DecimalFeatureNames, Table.ColumnNames(TypedYearFeatures)}),
-		    TypedDecimalFeatures = Table.TransformColumns(
-		        TypedYearFeatures,
-		        List.Transform(ExistingDecimalFeatures, (C as text) => {C, each CleanNonNegative(_), type nullable number}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    MeanPledgeFeatureNames = {"MeanPledgeCity", "MeanPledgeCityYear", "MeanPledgeCityYearMonth"},
-		    ExistingMeanPledgeFeatures = List.Intersect({MeanPledgeFeatureNames, Table.ColumnNames(TypedDecimalFeatures)}),
-		    TypedMeanPledgeFeatures = Table.TransformColumns(
-		        TypedDecimalFeatures,
-		        List.Transform(ExistingMeanPledgeFeatures, (C as text) => {C, each CleanNonNegative(_), type nullable number}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    IntegerFeatureNames = {
-		        "SourceCampaignLengthDays", "DaysSpentMakingCampaign", "DaysInceptionToDeadline",
-		        "BackersInCityYear", "BackersInCityYearMonth", "AllTimeBackersInCity"
-		    },
-		    ExistingIntegerFeatures = List.Intersect({IntegerFeatureNames, Table.ColumnNames(TypedMeanPledgeFeatures)}),
-		    TypedIntegerFeatures = Table.TransformColumns(
-		        TypedMeanPledgeFeatures,
-		        List.Transform(ExistingIntegerFeatures, (C as text) => {C, each CleanNonNegativeInteger(_), Int64.Type}),
-		        null,
-		        MissingField.Ignore
-		    ),
-		
-		    // ---------------------------------------------------------------------
-		    // 7. Derive reliable dates, duration and USD amounts.
-		    // ---------------------------------------------------------------------
-		    AddedCreatedDate = Table.AddColumn(
-		        TypedIntegerFeatures, "CreatedDate",
-		        each if [CreatedDateTime] = null then null else Date.From([CreatedDateTime]), type nullable date
-		    ),
-		    AddedLaunchDate = Table.AddColumn(
-		        AddedCreatedDate, "LaunchDate",
-		        each if [LaunchDateTime] = null then null else Date.From([LaunchDateTime]), type nullable date
-		    ),
-		    AddedDeadlineDate = Table.AddColumn(
-		        AddedLaunchDate, "DeadlineDate",
-		        each if [DeadlineDateTime] = null then null else Date.From([DeadlineDateTime]), type nullable date
-		    ),
-		    AddedStateChangedDate = Table.AddColumn(
-		        AddedDeadlineDate, "StateChangedDate",
-		        each if [StateChangedDateTime] = null then null else Date.From([StateChangedDateTime]), type nullable date
-		    ),
-		    AddedCampaignDuration = Table.AddColumn(
-		        AddedStateChangedDate, "CampaignDurationDays",
-		        each if [LaunchDate] = null or [DeadlineDate] = null then null
-		             else let D = Duration.Days([DeadlineDate] - [LaunchDate]) in if D < 0 or D > 365 then null else D,
-		        Int64.Type
-		    ),
-		
-		    // Prefer an existing valid USD amount; otherwise convert local amount using
-		    // ExUSD (USD per one unit of local currency), or use a 1:1 USD conversion.
-		    AddedGoalUSDCalc = Table.AddColumn(
-		        AddedCampaignDuration, "__GoalUSD_Calc",
-		        each
-		            let
-		                Existing = CleanPositive(Record.FieldOrDefault(_, "GoalUSD", null)),
-		                Local = CleanPositive([GoalLocal]),
+		                ExistingUSD = CleanPositive([GoalUSD]),
+		                LocalGoal = CleanPositive([GoalLocal]),
 		                Rate = CleanPositive([ExUSD]),
-		                Converted = if Local <> null and Rate <> null then Local * Rate else null,
-		                USDLocal = if [CurrencyCode] = "USD" then Local else null
-		            in if Existing <> null then Existing else if Converted <> null then Converted else USDLocal,
-		        Currency.Type
+		                Converted = if LocalGoal <> null and Rate <> null then LocalGoal * Rate else null,
+		                USDLocal = if [CurrencyCode] = "USD" then LocalGoal else null
+		            in
+		                if ExistingUSD <> null then ExistingUSD
+		                else if Converted <> null and Converted > 0 then Converted
+		                else USDLocal,
+		        type nullable number
 		    ),
-		    AddedPledgedUSDCalc = Table.AddColumn(
-		        AddedGoalUSDCalc, "__PledgedUSD_Calc",
+		    AddPledgedUSDCalc = Table.AddColumn(
+		        AddGoalUSDCalc,
+		        "__PledgedUSD_Calc",
 		        each
 		            let
-		                Existing = CleanNonNegative(Record.FieldOrDefault(_, "PledgedUSD", null)),
-		                Local = CleanNonNegative([PledgedLocal]),
+		                ExistingUSD = CleanNonNegative([PledgedUSD]),
+		                LocalPledged = CleanNonNegative([PledgedLocal]),
 		                Rate = CleanPositive([ExUSD]),
-		                Converted = if Local <> null and Rate <> null then Local * Rate else null,
-		                USDLocal = if [CurrencyCode] = "USD" then Local else null
-		            in if Existing <> null then Existing else if Converted <> null then Converted else USDLocal,
-		        Currency.Type
+		                Converted = if LocalPledged <> null and Rate <> null then LocalPledged * Rate else null,
+		                USDLocal = if [CurrencyCode] = "USD" then LocalPledged else null
+		            in
+		                if ExistingUSD <> null then ExistingUSD
+		                else if Converted <> null and Converted >= 0 then Converted
+		                else USDLocal,
+		        type nullable number
 		    ),
-		    DropPriorUSD = Table.RemoveColumns(AddedPledgedUSDCalc, {"GoalUSD", "PledgedUSD"}, MissingField.Ignore),
+		    DropPriorUSD = Table.RemoveColumns(AddPledgedUSDCalc, {"GoalUSD", "PledgedUSD"}),
 		    RestoreGoalUSD = Table.RenameColumns(DropPriorUSD, {{"__GoalUSD_Calc", "GoalUSD"}}),
 		    RestorePledgedUSD = Table.RenameColumns(RestoreGoalUSD, {{"__PledgedUSD_Calc", "PledgedUSD"}}),
 		
-		    AddedGoalAchievement = Table.AddColumn(
-		        RestorePledgedUSD, "GoalAchievementPct",
+		    // ------------------------------------------------------------------
+		    // 6. Derived reporting fields.
+		    // The raw MasterKickstarter export already includes some derived calendar
+		    // fields (for example CreatedTime, LaunchYear and CreatedYearMonth).
+		    // Remove those source copies before recalculating them from the validated
+		    // timestamps. This prevents "The field already exists in the record" errors
+		    // and makes the timestamp columns the single source of truth.
+		    // ------------------------------------------------------------------
+		    DerivedFieldsToRebuild = {
+		        "CreatedDate", "LaunchDate", "DeadlineDate", "StateChangedDate",
+		        "CreatedTime", "LaunchTime", "DeadlineTime", "StateChangedTime",
+		        "CreatedYear", "LaunchYear", "DeadlineYear", "StateChangedYear",
+		        "CreatedYearMonth", "LaunchYearMonth", "DeadlineYearMonth", "StateChangedYearMonth",
+		        "CampaignDurationDays", "GoalAchievementPct", "PledgePerBacker",
+		        "GoalReachedFlag", "HasGoalUSD", "ProjectSlugDisplay"
+		    },
+		    ClearedDerivedFields = Table.RemoveColumns(
+		        RestorePledgedUSD,
+		        DerivedFieldsToRebuild,
+		        MissingField.Ignore
+		    ),
+		    AddCreatedDate = Table.AddColumn(ClearedDerivedFields, "CreatedDate", each Date.From([CreatedDateTime]), type date),
+		    AddLaunchDate = Table.AddColumn(AddCreatedDate, "LaunchDate", each Date.From([LaunchDateTime]), type date),
+		    AddDeadlineDate = Table.AddColumn(AddLaunchDate, "DeadlineDate", each Date.From([DeadlineDateTime]), type date),
+		    AddStateChangedDate = Table.AddColumn(AddDeadlineDate, "StateChangedDate", each if [StateChangedDateTime] = null then null else Date.From([StateChangedDateTime]), type nullable date),
+		    AddCreatedTime = Table.AddColumn(AddStateChangedDate, "CreatedTime", each Time.From([CreatedDateTime]), type time),
+		    AddLaunchTime = Table.AddColumn(AddCreatedTime, "LaunchTime", each Time.From([LaunchDateTime]), type time),
+		    AddDeadlineTime = Table.AddColumn(AddLaunchTime, "DeadlineTime", each Time.From([DeadlineDateTime]), type time),
+		    AddStateChangedTime = Table.AddColumn(AddDeadlineTime, "StateChangedTime", each if [StateChangedDateTime] = null then null else Time.From([StateChangedDateTime]), type nullable time),
+		    AddCreatedYear = Table.AddColumn(AddStateChangedTime, "CreatedYear", each Date.Year([CreatedDate]), Int64.Type),
+		    AddLaunchYear = Table.AddColumn(AddCreatedYear, "LaunchYear", each Date.Year([LaunchDate]), Int64.Type),
+		    AddDeadlineYear = Table.AddColumn(AddLaunchYear, "DeadlineYear", each Date.Year([DeadlineDate]), Int64.Type),
+		    AddStateChangedYear = Table.AddColumn(AddDeadlineYear, "StateChangedYear", each if [StateChangedDate] = null then null else Date.Year([StateChangedDate]), type nullable number),
+		    AddCreatedYearMonth = Table.AddColumn(AddStateChangedYear, "CreatedYearMonth", each Date.StartOfMonth([CreatedDate]), type date),
+		    AddLaunchYearMonth = Table.AddColumn(AddCreatedYearMonth, "LaunchYearMonth", each Date.StartOfMonth([LaunchDate]), type date),
+		    AddDeadlineYearMonth = Table.AddColumn(AddLaunchYearMonth, "DeadlineYearMonth", each Date.StartOfMonth([DeadlineDate]), type date),
+		    AddStateChangedYearMonth = Table.AddColumn(AddDeadlineYearMonth, "StateChangedYearMonth", each if [StateChangedDate] = null then null else Date.StartOfMonth([StateChangedDate]), type nullable date),
+		    AddCampaignDuration = Table.AddColumn(
+		        AddStateChangedYearMonth,
+		        "CampaignDurationDays",
+		        each let D = Duration.Days([DeadlineDate] - [LaunchDate]) in if D < 0 or D > 365 then null else D,
+		        Int64.Type
+		    ),
+		    AddGoalAchievement = Table.AddColumn(
+		        AddCampaignDuration,
+		        "GoalAchievementPct",
 		        each if [GoalUSD] = null or [GoalUSD] <= 0 or [PledgedUSD] = null then null else [PledgedUSD] / [GoalUSD],
-		        Percentage.Type
+		        type nullable number
 		    ),
-		    AddedPledgePerBacker = Table.AddColumn(
-		        AddedGoalAchievement, "PledgePerBacker",
+		    AddPledgePerBacker = Table.AddColumn(
+		        AddGoalAchievement,
+		        "PledgePerBacker",
 		        each if [PledgedUSD] = null or [BackerCount] = null or [BackerCount] <= 0 then null else [PledgedUSD] / [BackerCount],
-		        Currency.Type
+		        type nullable number
 		    ),
-		    AddedGoalReached = Table.AddColumn(
-		        AddedPledgePerBacker, "GoalReachedFlag",
+		    AddGoalReached = Table.AddColumn(
+		        AddPledgePerBacker,
+		        "GoalReachedFlag",
 		        each if [GoalUSD] = null or [GoalUSD] <= 0 or [PledgedUSD] = null then null else [PledgedUSD] >= [GoalUSD],
 		        type nullable logical
 		    ),
-		    AddedHasGoalUSD = Table.AddColumn(
-		        AddedGoalReached, "HasGoalUSD",
-		        each [GoalUSD] <> null and [GoalUSD] > 0,
-		        type logical
+		    AddHasGoalUSD = Table.AddColumn(AddGoalReached, "HasGoalUSD", each [GoalUSD] <> null and [GoalUSD] > 0, type logical),
+		    AddSlugDisplay = Table.AddColumn(AddHasGoalUSD, "ProjectSlugDisplay", each if [ProjectSlug] = null then null else Text.Proper(Text.Replace([ProjectSlug], "-", " ")), type nullable text),
+		
+		    // ------------------------------------------------------------------
+		    // 7. Remove records missing essential source facts or containing invalid
+		    //    core values. Optional fields are not filled with artificial values.
+		    // ------------------------------------------------------------------
+		    ValidCoreRows = Table.SelectRows(
+		        AddSlugDisplay,
+		        each [ProjectID] <> null
+		            and [ProjectName] <> null
+		            and [ProjectStatus] <> null
+		            and [CurrencyCode] <> null
+		            and [GoalLocal] <> null and [GoalLocal] > 0
+		            and [PledgedLocal] <> null and [PledgedLocal] >= 0
+		            and [GoalUSD] <> null and [GoalUSD] > 0
+		            and [PledgedUSD] <> null and [PledgedUSD] >= 0
+		            and [BackerCount] <> null
+		            and not ([BackerCount] = 0 and [PledgedUSD] > 0)
+		            and [CreatedDateTime] <> null
+		            and [LaunchDateTime] <> null
+		            and [DeadlineDateTime] <> null
+		            and [CampaignDurationDays] <> null
 		    ),
 		
-		    // ---------------------------------------------------------------------
-		    // 8. Lineage and row-level quality indicators.
-		    // ---------------------------------------------------------------------
-		    DropPriorLineage = Table.RemoveColumns(AddedHasGoalUSD, {"Source_System", "Snapshot_Date", "SnapshotDate"}, MissingField.Ignore),
-		    AddedSourceSystem = Table.AddColumn(DropPriorLineage, "Source_System", each "MasterKickstarter", type text),
-		    AddedSnapshotDate = Table.AddColumn(AddedSourceSystem, "Snapshot_Date", each SnapshotDateReference, type date),
+		    // Check duplicate keys using a narrow grouping table. The previous approach
+		    // grouped complete nested tables and then recombined them, which is expensive
+		    // for large datasets. Repeated ProjectIDs are excluded rather than selecting
+		    // an arbitrary conflicting record.
+		    BufferedValidRows = Table.Buffer(ValidCoreRows),
+		    ProjectIDCounts = Table.Group(
+		        BufferedValidRows,
+		        {"ProjectID"},
+		        {{"RecordCount", each Table.RowCount(_), Int64.Type}}
+		    ),
+		    UniqueProjectIDRows = Table.SelectRows(ProjectIDCounts, each [RecordCount] = 1),
+		    UniqueProjectIDKeys = Table.RenameColumns(
+		        Table.SelectColumns(UniqueProjectIDRows, {"ProjectID"}),
+		        {{"ProjectID", "__UniqueProjectID"}}
+		    ),
+		    JoinedUniqueKeys = Table.NestedJoin(
+		        BufferedValidRows, {"ProjectID"},
+		        UniqueProjectIDKeys, {"__UniqueProjectID"},
+		        "__UniqueKey", JoinKind.Inner
+		    ),
+		    UniqueProjectRows = Table.RemoveColumns(JoinedUniqueKeys, {"__UniqueKey"}),
 		
-		    AddedDataQualityFlag = Table.AddColumn(
-		        AddedSnapshotDate, "DataQualityFlag",
-		        each
-		            let
-		                Issues = List.RemoveNulls({
-		                    if [ProjectID] = null then "Missing/invalid ProjectID" else null,
-		                    if [ProjectName] = null then "Missing ProjectName" else null,
-		                    if [ProjectStatus] = null then "Missing ProjectStatus" else null,
-		                    if [GoalLocal] = null then "Missing/invalid GoalLocal" else null,
-		                    if [GoalUSD] = null then "GoalUSD unavailable" else null,
-		                    if [PledgedUSD] = null then "PledgedUSD unavailable" else null,
-		                    if [DateQualityFlag] <> "OK" then "Review DateQualityFlag" else null,
-		                    if [Latitude] = null and [Longitude] <> null then "Latitude missing/invalid" else null,
-		                    if [Longitude] = null and [Latitude] <> null then "Longitude missing/invalid" else null
-		                })
-		            in if List.IsEmpty(Issues) then "OK" else Text.Combine(Issues, "; "),
+		    AddSourceSystem = Table.AddColumn(UniqueProjectRows, "Source_System", each "MasterKickstarter", type text),
+		    AddSnapshotDate = Table.AddColumn(AddSourceSystem, "Snapshot_Date", each SnapshotDateReference, type date),
+		    AddDateQuality = Table.AddColumn(
+		        AddSnapshotDate,
+		        "DateQualityFlag",
+		        each if [StateChangedDateTime] = null then "Core dates valid; state-change date unavailable" else "OK",
+		        type text
+		    ),
+		    AddDataQuality = Table.AddColumn(
+		        AddDateQuality,
+		        "DataQualityFlag",
+		        each "Core valid; optional source fields may be missing",
 		        type text
 		    ),
 		
-		    // ---------------------------------------------------------------------
-		    // 9. Business-friendly final column order. Any extra source columns that
-		    //    are not in this list are retained after the standard columns.
-		    // ---------------------------------------------------------------------
+		    // Keep a documented, clean schema; unknown raw export columns are not loaded.
 		    PreferredColumnOrder = {
 		        "ProjectID", "ProjectName", "ProjectSlug", "ProjectSlugDisplay", "Blurb",
 		        "Category", "Subcategory", "ProjectStatus", "StaffPickFlag", "SpotlightFlag", "DisableCommunicationFlag",
@@ -1092,12 +1024,12 @@ expression Stg_Master =
 		        "GoalAchievementPct", "PledgePerBacker", "GoalReachedFlag", "HasGoalUSD",
 		        "DateQualityFlag", "DataQualityFlag", "Source_System", "Snapshot_Date"
 		    },
-		    ExistingPreferredColumns = List.Select(PreferredColumnOrder, each Table.HasColumns(AddedDataQualityFlag, _)),
-		    RemainingColumns = List.Difference(Table.ColumnNames(AddedDataQualityFlag), ExistingPreferredColumns),
-		    ReorderedColumns = Table.ReorderColumns(AddedDataQualityFlag, ExistingPreferredColumns & RemainingColumns),
-		
-		    // Final safety pass: these export/index columns must never reach the model.
-		    FinalTable = Table.RemoveColumns(ReorderedColumns, {"X1", "X1_1", "", "Unnamed: 0", "Unnamed: 0.1"}, MissingField.Ignore)
+		    FinalColumns = List.Select(PreferredColumnOrder, each Table.HasColumns(AddDataQuality, _)),
+		    FinalTable = Table.ReorderColumns(
+		        Table.SelectColumns(AddDataQuality, FinalColumns, MissingField.Ignore),
+		        FinalColumns,
+		        MissingField.Ignore
+		    )
 		in
 		    FinalTable
 	lineageTag: b22bf779-8453-48dc-9c10-fa7a35694ee4
@@ -1235,9 +1167,25 @@ expression Stg_Mapping =
 
 expression Conformed_Campaign_AllSources =
 		let
-		  Source = ""
+		    // 1. Select standardized columns from each staging table
+		    Cols = {
+		        "ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode",
+		        "CountryCode", "GoalUSD", "PledgedUSD", "BackerCount", "ProjectStatus",
+		        "LaunchDate", "DeadlineDate", "CampaignDurationDays", "Source_System", "Snapshot_Date"
+		    },
+		
+		    K16 = Table.SelectColumns(Stg_Kaggle_2016, Cols, MissingField.Ignore),
+		    K18 = Table.SelectColumns(Stg_Kaggle_2018, Cols, MissingField.Ignore),
+		    MK  = Table.SelectColumns(Stg_Master, Cols, MissingField.Ignore),
+		    WR  = Table.SelectColumns(Stg_WebRobots, Cols, MissingField.Ignore),
+		
+		    // 2. Append all tables
+		    #"Appended All" = Table.Combine({WR, K18, MK, K16}),
+		
+		    // 3. Filter out invalid null ProjectIDs
+		    #"Filtered Valid IDs" = Table.SelectRows(#"Appended All", each [ProjectID] <> null)
 		in
-		  Source
+		    #"Filtered Valid IDs"
 	lineageTag: 49f42196-f32c-404f-85e0-94ea14366df2
 	queryGroup: 03_Conformed
 
