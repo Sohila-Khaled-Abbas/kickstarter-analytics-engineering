@@ -1314,3 +1314,21 @@ expression Conformed_Status =
 	lineageTag: cd16a37f-ab27-4af0-93b6-abc996dbcf8d
 	queryGroup: 03_Conformed
 
+expression Conformed_Location =
+		let
+		    // 1. Extract detailed locations from MasterKickstarter
+		    SourceMaster = Table.SelectColumns(
+		        Stg_MasterKickstarter,
+		        {"CountryName", "State", "County", "City", "Latitude", "Longitude"},
+		        MissingField.Ignore
+		    ),
+		    #"Distinct Master" = Table.Distinct(SourceMaster),
+		
+		    // 2. Add LocationKey
+		    #"Sorted" = Table.Sort(#"Distinct Master", {{"CountryName", Order.Ascending}, {"State", Order.Ascending}, {"City", Order.Ascending}}),
+		    #"Added LocationKey" = Table.AddIndexColumn(#"Sorted", "LocationKey", 1, 1, Int64.Type)
+		in
+		    #"Added LocationKey"
+	lineageTag: 26331f49-b738-4e64-bcdf-a9130045ef04
+	queryGroup: 03_Conformed
+
