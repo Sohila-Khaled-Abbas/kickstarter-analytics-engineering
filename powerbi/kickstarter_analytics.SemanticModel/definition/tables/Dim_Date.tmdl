@@ -1,0 +1,230 @@
+table Dim_Date
+	lineageTag: 85aecec2-fca7-4f94-b309-7cc94275da07
+
+	column DateKey
+		dataType: int64
+		formatString: 0
+		lineageTag: cd3d2211-d89d-43fb-93bc-9650e1e78458
+		summarizeBy: count
+		sourceColumn: DateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 56f008b4-4e27-4713-80f8-1d680c88d474
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 6132c22e-4438-4b61-b72c-d0bdba802fe3
+		summarizeBy: sum
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: dd2f3e59-d625-4753-a4bd-b1661649eea1
+		summarizeBy: sum
+		sourceColumn: MonthNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthName
+		dataType: string
+		lineageTag: 77c39519-787b-4fa8-8a99-bc835716ba21
+		summarizeBy: none
+		sourceColumn: MonthName
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthShort
+		dataType: string
+		lineageTag: b784186f-aee1-4e32-a56b-f053d4881b3a
+		summarizeBy: none
+		sourceColumn: MonthShort
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearMonth
+		dataType: string
+		lineageTag: c1c969bf-896f-4d62-99e7-d7cf3ec1ae3b
+		summarizeBy: none
+		sourceColumn: YearMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuarterNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: acd84dac-9c46-4b73-89c9-e77c23da6863
+		summarizeBy: sum
+		sourceColumn: QuarterNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		dataType: string
+		lineageTag: ae74c49d-7956-477c-9b58-d80cdefd35b4
+		summarizeBy: none
+		sourceColumn: Quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearQuarter
+		dataType: string
+		lineageTag: 2280d983-b3eb-47aa-9a59-b19f04f0ac96
+		summarizeBy: none
+		sourceColumn: YearQuarter
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: cce84ad8-9680-417f-ae44-0aec862f12a3
+		summarizeBy: sum
+		sourceColumn: DayOfMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayOfWeekNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 6617f97a-a04b-49ec-a840-37853816c663
+		summarizeBy: sum
+		sourceColumn: DayOfWeekNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayName
+		dataType: string
+		lineageTag: 0a0548a1-414c-4663-aab1-a5db287106ea
+		summarizeBy: none
+		sourceColumn: DayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column DayShort
+		dataType: string
+		lineageTag: 44f05724-4f0b-47f7-b0ca-6587209c9ee1
+		summarizeBy: none
+		sourceColumn: DayShort
+
+		annotation SummarizationSetBy = Automatic
+
+	column IsWeekend
+		dataType: int64
+		formatString: 0
+		lineageTag: 45a53d2c-5357-4eb8-a730-5a17acbf4cad
+		summarizeBy: sum
+		sourceColumn: IsWeekend
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Date = m
+		mode: import
+		queryGroup: 04_Dimensions
+		source =
+				let
+				    // ── Parameters ──────────────────────────────────────────────────
+				    StartDate = #date(2009, 1, 1),
+				    EndDate   = #date(2026, 12, 31),
+				
+				    // ── Generate list of days ────────────────────────────────────────
+				    DayCount      = Duration.Days(EndDate - StartDate) + 1,
+				    DateList      = List.Dates(StartDate, DayCount, #duration(1, 0, 0, 0)),
+				    DateTable     = Table.FromList(DateList, Splitter.SplitByNothing(), {"Date"}),
+				
+				    // ── Cast Date column to proper Date type ─────────────────────────
+				    TypedDate = Table.TransformColumnTypes(DateTable, {{"Date", type date}}),
+				
+				    // ── DateKey (YYYYMMDD integer) ────────────────────────────────────
+				    AddDateKey = Table.AddColumn(TypedDate, "DateKey",
+				        each Date.Year([Date]) * 10000
+				            + Date.Month([Date]) * 100
+				            + Date.Day([Date]),
+				        Int64.Type),
+				
+				    // ── Year ──────────────────────────────────────────────────────────
+				    AddYear = Table.AddColumn(AddDateKey, "Year",
+				        each Date.Year([Date]), Int64.Type),
+				
+				    // ── Month Number ──────────────────────────────────────────────────
+				    AddMonthNumber = Table.AddColumn(AddYear, "MonthNumber",
+				        each Date.Month([Date]), Int64.Type),
+				
+				    // ── Month Name (locale-aware full name) ───────────────────────────
+				    AddMonthName = Table.AddColumn(AddMonthNumber, "MonthName",
+				        each Date.MonthName([Date]), type text),
+				
+				    // ── Month Short (3-letter abbreviation) ───────────────────────────
+				    AddMonthShort = Table.AddColumn(AddMonthName, "MonthShort",
+				        each Text.Start(Date.MonthName([Date]), 3), type text),
+				
+				    // ── Year-Month label (e.g. "2024-03") ────────────────────────────
+				    AddYearMonth = Table.AddColumn(AddMonthShort, "YearMonth",
+				        each Text.PadStart(Text.From(Date.Year([Date])), 4, "0")
+				            & "-"
+				            & Text.PadStart(Text.From(Date.Month([Date])), 2, "0"),
+				        type text),
+				
+				    // ── Quarter Number ────────────────────────────────────────────────
+				    AddQuarterNumber = Table.AddColumn(AddYearMonth, "QuarterNumber",
+				        each Date.QuarterOfYear([Date]), Int64.Type),
+				
+				    // ── Quarter Label (e.g. "Q2") ─────────────────────────────────────
+				    AddQuarter = Table.AddColumn(AddQuarterNumber, "Quarter",
+				        each "Q" & Text.From(Date.QuarterOfYear([Date])), type text),
+				
+				    // ── Year-Quarter label (e.g. "2024 Q2") ──────────────────────────
+				    AddYearQuarter = Table.AddColumn(AddQuarter, "YearQuarter",
+				        each Text.From(Date.Year([Date]))
+				            & " Q"
+				            & Text.From(Date.QuarterOfYear([Date])),
+				        type text),
+				
+				    // ── Day of Month ──────────────────────────────────────────────────
+				    AddDayOfMonth = Table.AddColumn(AddYearQuarter, "DayOfMonth",
+				        each Date.Day([Date]), Int64.Type),
+				
+				    // ── Day of Week Number (1=Monday … 7=Sunday, ISO 8601) ────────────
+				    AddDayOfWeekNumber = Table.AddColumn(AddDayOfMonth, "DayOfWeekNumber",
+				        each
+				            let d = Date.DayOfWeek([Date], Day.Monday) + 1
+				            in d,
+				        Int64.Type),
+				
+				    // ── Day Name (full locale-aware name) ────────────────────────────
+				    AddDayName = Table.AddColumn(AddDayOfWeekNumber, "DayName",
+				        each Date.DayOfWeekName([Date]), type text),
+				
+				    // ── Day Short (3-letter abbreviation) ────────────────────────────
+				    AddDayShort = Table.AddColumn(AddDayName, "DayShort",
+				        each Text.Start(Date.DayOfWeekName([Date]), 3), type text),
+				
+				    // ── IsWeekend flag (1 = Weekend, 0 = Weekday) ────────────────────
+				    AddIsWeekend = Table.AddColumn(AddDayShort, "IsWeekend",
+				        each if Date.DayOfWeek([Date], Day.Monday) >= 5 then 1 else 0,
+				        Int64.Type),
+				
+				    // ── Final column ordering & types ────────────────────────────────
+				    ReorderCols = Table.ReorderColumns(AddIsWeekend, {
+				        "DateKey", "Date", "Year", "MonthNumber", "MonthName",
+				        "MonthShort", "YearMonth", "QuarterNumber", "Quarter",
+				        "YearQuarter", "DayOfMonth", "DayOfWeekNumber", "DayName",
+				        "DayShort", "IsWeekend"
+				    })
+				
+				in
+				    ReorderCols
+
