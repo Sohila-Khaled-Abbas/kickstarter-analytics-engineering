@@ -1167,168 +1167,547 @@ expression Stg_Mapping =
 
 expression Conformed_Campaign_AllSources =
 		let
-		    // 1. Define the shared output columns
-		    Cols = {
-		        "ProjectID",
-		        "ProjectName",
-		        "Subcategory",
-		        "Category",
-		        "CurrencyCode",
-		        "CountryCode",
-		        "GoalUSD",
-		        "PledgedUSD",
-		        "BackerCount",
-		        "ProjectStatus",
-		        "LaunchDate",
-		        "DeadlineDate",
-		        "CampaignDurationDays",
-		        "Source_System",
-		        "Snapshot_Date"
+		    // Conformed layer: narrow projection + append only.
+		    // CountryName is derived from CountryCode where possible. Source country names are retained
+		    // when no code mapping exists. Unknown codes are not guessed.
+		
+		    OutputColumns = {
+		        "ProjectID", "ProjectName", "Subcategory", "Category", "CurrencyCode",
+		        "CountryCode", "CountryName", "GoalUSD", "PledgedUSD", "BackerCount",
+		        "ProjectStatus", "LaunchDate", "DeadlineDate", "CampaignDurationDays",
+		        "Source_System", "Snapshot_Date"
 		    },
 		
-		    // 2. Select only required columns and filter invalid IDs
-		    //    Types and business calculations remain in the staging queries.
-		    PrepareSource = (InputTable as table) as table =>
-		        let
-		            Selected =
-		                Table.SelectColumns(
-		                    InputTable,
-		                    Cols,
-		                    MissingField.UseNull
-		                ),
+		    SelectOutput = (InputTable as table) as table =>
+		        Table.SelectColumns(InputTable, OutputColumns, MissingField.UseNull),
 		
-		            ValidIDs =
-		                Table.SelectRows(
-		                    Selected,
-		                    each
-		                        try [ProjectID] <> null and [ProjectID] > 0
-		                        otherwise false
-		                )
-		        in
-		            ValidIDs,
+		    K16 = SelectOutput(Stg_Kaggle_2016),
+		    K18 = SelectOutput(Stg_Kaggle_2018),
+		    // If your actual master staging query is named Stg_Master, replace Stg_MasterKickstarter below.
+		    MK = SelectOutput(Stg_Master),
+		    WR = SelectOutput(Stg_WebRobots),
 		
-		    // 3. Prepare each source
-		    K16 = PrepareSource(Stg_Kaggle_2016),
-		    K18 = PrepareSource(Stg_Kaggle_2018),
-		    MK  = PrepareSource(Stg_Master),
-		    WR  = PrepareSource(Stg_WebRobots),
+		    Appended = Table.Combine({WR, K18, MK, K16}),
 		
-		    // 4. Append the prepared tables
-		    Appended =
-		        Table.Combine({WR, K18, MK, K16})
+		    // IDs should already be typed as whole numbers in staging. Filter early before country enrichment.
+		    ValidProjectIDs = Table.SelectRows(Appended, each [ProjectID] <> null and [ProjectID] > 0),
 		
+		    CountryLookup = [
+		        USA = "United States", US = "United States",
+		        GBR = "United Kingdom", GB = "United Kingdom",
+		        CAN = "Canada", CA = "Canada",
+		        AUS = "Australia", AU = "Australia",
+		        DEU = "Germany", DE = "Germany",
+		        FRA = "France", FR = "France",
+		        ITA = "Italy", IT = "Italy",
+		        ESP = "Spain", ES = "Spain",
+		        NLD = "Netherlands", NL = "Netherlands",
+		        NZL = "New Zealand", NZ = "New Zealand",
+		        IRL = "Ireland", IE = "Ireland",
+		        SWE = "Sweden", SE = "Sweden",
+		        DNK = "Denmark", DK = "Denmark",
+		        NOR = "Norway", NO = "Norway",
+		        CHE = "Switzerland", CH = "Switzerland",
+		        AUT = "Austria", AT = "Austria",
+		        BEL = "Belgium", BE = "Belgium",
+		        FIN = "Finland", FI = "Finland",
+		        HKG = "Hong Kong", HK = "Hong Kong",
+		        SGP = "Singapore", SG = "Singapore",
+		        MEX = "Mexico", MX = "Mexico",
+		        JPN = "Japan", JP = "Japan",
+		        POL = "Poland", PL = "Poland",
+		        PRT = "Portugal", PT = "Portugal",
+		        BRA = "Brazil", BR = "Brazil",
+		        ARG = "Argentina", AR = "Argentina",
+		        CZE = "Czechia", CZ = "Czechia",
+		        GRC = "Greece", GR = "Greece",
+		        TUR = "Türkiye", TR = "Türkiye",
+		        ZAF = "South Africa", ZA = "South Africa",
+		        CHN = "China", CN = "China",
+		        IND = "India", IN = "India",
+		        RUS = "Russia", RU = "Russia",
+		        UKR = "Ukraine", UA = "Ukraine",
+		        ARE = "United Arab Emirates", AE = "United Arab Emirates",
+		        TWN = "Taiwan", TW = "Taiwan",
+		        THA = "Thailand", TH = "Thailand",
+		        IDN = "Indonesia", ID = "Indonesia",
+		        MYS = "Malaysia", MY = "Malaysia",
+		        PHL = "Philippines", PH = "Philippines",
+		        VNM = "Vietnam", VN = "Vietnam",
+		        COL = "Colombia", CO = "Colombia",
+		        CHL = "Chile", CL = "Chile",
+		        PER = "Peru", PE = "Peru",
+		        EST = "Estonia", EE = "Estonia",
+		        LVA = "Latvia", LV = "Latvia",
+		        LTU = "Lithuania", LT = "Lithuania",
+		        LUX = "Luxembourg", LU = "Luxembourg",
+		        ISL = "Iceland", IS = "Iceland",
+		        ROU = "Romania", RO = "Romania",
+		        HUN = "Hungary", HU = "Hungary",
+		        HRV = "Croatia", HR = "Croatia",
+		        SVK = "Slovakia", SK = "Slovakia",
+		        SVN = "Slovenia", SI = "Slovenia",
+		        BGR = "Bulgaria", BG = "Bulgaria",
+		        CYP = "Cyprus", CY = "Cyprus",
+		        ISR = "Israel", IL = "Israel",
+		        KOR = "South Korea", KR = "South Korea"
+		    ],
+		
+		    NormalizedCountryInputs = Table.TransformColumns(
+		        ValidProjectIDs,
+		        {
+		            {"CountryCode", each if _ = null then null else Text.Upper(Text.Trim(Text.From(_))), type nullable text},
+		            {"CountryName", each if _ = null then null else Text.Trim(Text.From(_)), type nullable text}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
+		
+		    // Some source variants may place an ISO code in CountryName rather than CountryCode.
+		    AddedResolvedCountryCode = Table.AddColumn(
+		        NormalizedCountryInputs,
+		        "__CountryCodeResolved",
+		        each
+		            let
+		                Code = [CountryCode],
+		                NameValue = [CountryName],
+		                NameKey = if NameValue = null or NameValue = "" then null else Text.Upper(Text.Trim(NameValue))
+		            in
+		                if Code <> null and Code <> "" then Code
+		                else if NameKey <> null then
+		                    if Record.HasFields(CountryLookup, NameKey) then NameKey else null
+		                else null,
+		        type nullable text
+		    ),
+		
+		    AddedResolvedCountryName = Table.AddColumn(
+		        AddedResolvedCountryCode,
+		        "__CountryNameResolved",
+		        each
+		            let
+		                Code = [__CountryCodeResolved],
+		                NameValue = [CountryName],
+		                NameKey = if NameValue = null or NameValue = "" then null else Text.Upper(Text.Trim(NameValue)),
+		                NameFromCode = if Code = null then null else Record.FieldOrDefault(CountryLookup, Code, null),
+		                NameFromNameCode = if NameKey = null then null else Record.FieldOrDefault(CountryLookup, NameKey, null),
+		                ExistingName = if NameValue = null or NameValue = "" then null else NameValue
+		            in
+		                if NameFromCode <> null then NameFromCode
+		                else if NameFromNameCode <> null then NameFromNameCode
+		                else ExistingName,
+		        type nullable text
+		    ),
+		
+		    RemoveOldCountryFields = Table.RemoveColumns(
+		        AddedResolvedCountryName,
+		        {"CountryCode", "CountryName"},
+		        MissingField.Ignore
+		    ),
+		    RestoreCountryFields = Table.RenameColumns(
+		        RemoveOldCountryFields,
+		        {{"__CountryCodeResolved", "CountryCode"}, {"__CountryNameResolved", "CountryName"}},
+		        MissingField.Ignore
+		    ),
+		    Final = Table.ReorderColumns(RestoreCountryFields, OutputColumns, MissingField.Ignore)
 		in
-		    Appended
+		    Final
 	lineageTag: 49f42196-f32c-404f-85e0-94ea14366df2
 	queryGroup: 03_Conformed
 
+	annotation PBI_ResultType = Table
+
 expression Conformed_Campaign_Deduplicated =
 		let
-		    Source = Conformed_Campaign_AllSources,
-		
-		    // 1. Sort by recency and pledge amount descending
-		    #"Sorted Rows" = Table.Sort(
-		        Source,
-		        {
-		            {"Snapshot_Date", Order.Descending},
-		            {"PledgedUSD", Order.Descending}
-		        }
+		    // One canonical row per ProjectID.
+		    // Selection rule: latest Snapshot_Date; then highest PledgedUSD; then preferred source rank.
+		    Source = Table.SelectRows(
+		        Conformed_Campaign_AllSources,
+		        each [ProjectID] <> null and [ProjectID] > 0
 		    ),
 		
-		    // 2. Buffer in memory to guarantee sort order retention
-		    #"Buffered Table" = Table.Buffer(#"Sorted Rows"),
+		    AddSourceRank = Table.AddColumn(
+		        Source,
+		        "__SourceRank",
+		        each
+		            if [Source_System] = "WebRobots" then 4
+		            else if [Source_System] = "Kaggle_2018" then 3
+		            else if [Source_System] = "MasterKickstarter" then 2
+		            else if [Source_System] = "Kaggle_2016" then 1
+		            else 0,
+		        Int64.Type
+		    ),
+		    AddSnapshotRank = Table.AddColumn(
+		        AddSourceRank,
+		        "__SnapshotRank",
+		        each if [Snapshot_Date] = null then #date(1900, 1, 1) else [Snapshot_Date],
+		        type date
+		    ),
+		    AddPledgedRank = Table.AddColumn(
+		        AddSnapshotRank,
+		        "__PledgedRank",
+		        each if [PledgedUSD] = null then -1 else Number.From([PledgedUSD]),
+		        type number
+		    ),
 		
-		    // 3. Keep first occurrence per ProjectID
-		    #"Deduplicated Records" = Table.Distinct(#"Buffered Table", {"ProjectID"})
+		    // When source, snapshot, and pledge values tie, prefer the alphabetically first
+		    // nonblank Category/Subcategory/ProjectName for deterministic results. This is a tie-break
+		    // only; if multiple categories are analytically meaningful, retain them in a bridge table.
+		    CompareTextAscendingForMax = (LeftValue as any, RightValue as any) as number =>
+		        let
+		            L = if LeftValue = null then null else Text.Upper(Text.From(LeftValue)),
+		            R = if RightValue = null then null else Text.Upper(Text.From(RightValue))
+		        in
+		            if L = null and R <> null then -1
+		            else if L <> null and R = null then 1
+		            else if L = null and R = null then 0
+		            else if L < R then 1
+		            else if L > R then -1
+		            else 0,
+		
+		    // Group and select the best row without a global sort + Table.Buffer + Table.Distinct.
+		    GroupedByProject = Table.Group(
+		        AddPledgedRank,
+		        {"ProjectID"},
+		        {{
+		            "BestRecord",
+		            each Table.Max(
+		                _,
+		                (x as record, y as record) as number =>
+		                    if x[__SnapshotRank] > y[__SnapshotRank] then 1
+		                    else if x[__SnapshotRank] < y[__SnapshotRank] then -1
+		                    else if x[__PledgedRank] > y[__PledgedRank] then 1
+		                    else if x[__PledgedRank] < y[__PledgedRank] then -1
+		                    else if x[__SourceRank] > y[__SourceRank] then 1
+		                    else if x[__SourceRank] < y[__SourceRank] then -1
+		                    else if CompareTextAscendingForMax(x[Category], y[Category]) <> 0 then CompareTextAscendingForMax(x[Category], y[Category])
+		                    else if CompareTextAscendingForMax(x[Subcategory], y[Subcategory]) <> 0 then CompareTextAscendingForMax(x[Subcategory], y[Subcategory])
+		                    else CompareTextAscendingForMax(x[ProjectName], y[ProjectName])
+		            ),
+		            type record
+		        }}
+		    ),
+		    ColumnsToExpand = List.RemoveItems(Table.ColumnNames(AddPledgedRank), {"ProjectID"}),
+		    ExpandedBestRecord = Table.ExpandRecordColumn(
+		        GroupedByProject,
+		        "BestRecord",
+		        ColumnsToExpand,
+		        ColumnsToExpand
+		    ),
+		    RemoveRankingHelpers = Table.RemoveColumns(
+		        ExpandedBestRecord,
+		        {"__SourceRank", "__SnapshotRank", "__PledgedRank"},
+		        MissingField.Ignore
+		    )
 		in
-		    #"Deduplicated Records"
+		    RemoveRankingHelpers
 	lineageTag: 09ec61c9-6042-480c-a632-9bcf795ae7fc
 	queryGroup: 03_Conformed
 
+	annotation PBI_ResultType = Exception
+
 expression Conformed_Category =
 		let
-		    Source = Conformed_Campaign_Deduplicated,
-		    #"Selected Columns" = Table.SelectColumns(Source, {"Category", "Subcategory"}),
-		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
-		    #"Filtered Nulls" = Table.SelectRows(#"Distinct Rows", each [Category] <> null),
-		    #"Sorted" = Table.Sort(#"Filtered Nulls", {{"Category", Order.Ascending}, {"Subcategory", Order.Ascending}}),
-		    #"Added CategoryKey" = Table.AddIndexColumn(#"Sorted", "CategoryKey", 1, 1, Int64.Type)
+		    // Dimensions use the conformed append directly. They do not need to wait for campaign-level deduplication.
+		    Source = Table.SelectColumns(
+		        Conformed_Campaign_AllSources,
+		        {"Category", "Subcategory"},
+		        MissingField.UseNull
+		    ),
+		    CleanText = Table.TransformColumns(
+		        Source,
+		        {
+		            {"Category", each if _ = null then null else Text.Trim(Text.Clean(Text.From(_))), type nullable text},
+		            {"Subcategory", each if _ = null then null else let T = Text.Trim(Text.Clean(Text.From(_))) in if T = "" then null else T, type nullable text}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidCategories = Table.SelectRows(CleanText, each [Category] <> null and [Category] <> ""),
+		    DistinctCategories = Table.Distinct(ValidCategories, {"Category", "Subcategory"}),
+		    SortedCategories = Table.Sort(
+		        DistinctCategories,
+		        {{"Category", Order.Ascending}, {"Subcategory", Order.Ascending}}
+		    ),
+		    AddedCategoryKey = Table.AddIndexColumn(SortedCategories, "CategoryKey", 1, 1, Int64.Type)
 		in
-		    #"Added CategoryKey"
+		    AddedCategoryKey
 	lineageTag: 07feb646-d3d4-41ab-9050-a91e17d2d3f9
 	queryGroup: 03_Conformed
 
+	annotation PBI_ResultType = Exception
+
 expression Conformed_Currency =
 		let
-		    Source = Conformed_Campaign_Deduplicated,
-		    #"Selected Columns" = Table.SelectColumns(Source, {"CurrencyCode"}),
-		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
-		    #"Filtered Nulls" = Table.SelectRows(#"Distinct Rows", each [CurrencyCode] <> null and [CurrencyCode] <> ""),
-		    #"Sorted" = Table.Sort(#"Filtered Nulls", {{"CurrencyCode", Order.Ascending}}),
-		    #"Added CurrencyKey" = Table.AddIndexColumn(#"Sorted", "CurrencyKey", 1, 1, Int64.Type),
-		    #"Added Currency Symbol" = Table.AddColumn(
-		        #"Added CurrencyKey",
+		    // Small dimension: avoid depending on Conformed_Campaign_Deduplicated.
+		    Source = Table.SelectColumns(Conformed_Campaign_AllSources, {"CurrencyCode"}, MissingField.UseNull),
+		    CleanCurrency = Table.TransformColumns(
+		        Source,
+		        {{"CurrencyCode", each if _ = null then null else Text.Upper(Text.Trim(Text.Clean(Text.From(_)))), type nullable text}},
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidCurrency = Table.SelectRows(CleanCurrency, each [CurrencyCode] <> null and [CurrencyCode] <> ""),
+		    DistinctCurrency = Table.Distinct(ValidCurrency, {"CurrencyCode"}),
+		    SortedCurrency = Table.Sort(DistinctCurrency, {{"CurrencyCode", Order.Ascending}}),
+		    AddedCurrencyKey = Table.AddIndexColumn(SortedCurrency, "CurrencyKey", 1, 1, Int64.Type),
+		    CurrencySymbols = [
+		        USD = "$", GBP = "£", EUR = "€", CAD = "CA$", AUD = "AU$", NZD = "NZ$",
+		        JPY = "¥", CNY = "¥", INR = "₹", CHF = "CHF", SEK = "kr", NOK = "kr",
+		        DKK = "kr", PLN = "zł", MXN = "MX$", BRL = "R$", HKD = "HK$", SGD = "S$",
+		        KRW = "₩", RUB = "₽", ZAR = "R", TRY = "₺", ILS = "₪"
+		    ],
+		    AddedCurrencySymbol = Table.AddColumn(
+		        AddedCurrencyKey,
 		        "CurrencySymbol",
-		        each if [CurrencyCode] = "USD" then "$"
-		             else if [CurrencyCode] = "GBP" then "£"
-		             else if [CurrencyCode] = "EUR" then "€"
-		             else if [CurrencyCode] = "CAD" then "CA$"
-		             else if [CurrencyCode] = "AUD" then "AU$"
-		             else [CurrencyCode],
+		        each Record.FieldOrDefault(CurrencySymbols, [CurrencyCode], [CurrencyCode]),
 		        type text
 		    )
 		in
-		    #"Added Currency Symbol"
+		    AddedCurrencySymbol
 	lineageTag: a6e7b2ce-cf6a-46b4-b25a-2fa3348314de
 	queryGroup: 03_Conformed
 
+	annotation PBI_ResultType = Exception
+
 expression Conformed_Status =
 		let
-		    Source = Conformed_Campaign_Deduplicated,
-		    #"Selected Columns" = Table.SelectColumns(Source, {"ProjectStatus"}),
-		    #"Distinct Rows" = Table.Distinct(#"Selected Columns"),
-		    #"Sorted" = Table.Sort(#"Distinct Rows", {{"ProjectStatus", Order.Ascending}}),
-		    #"Added StatusKey" = Table.AddIndexColumn(#"Sorted", "StatusKey", 1, 1, Int64.Type),
-		    #"Added IsCompleted" = Table.AddColumn(
-		        #"Added StatusKey",
+		    // Status dimension is independent of deduplication; select the single needed column early.
+		    Source = Table.SelectColumns(Conformed_Campaign_AllSources, {"ProjectStatus"}, MissingField.UseNull),
+		    CleanStatus = Table.TransformColumns(
+		        Source,
+		        {{"ProjectStatus", each if _ = null then null else Text.Proper(Text.Trim(Text.Clean(Text.From(_)))), type nullable text}},
+		        null,
+		        MissingField.Ignore
+		    ),
+		    NormalizeCanceled = Table.TransformColumns(
+		        CleanStatus,
+		        {{"ProjectStatus", each if _ = "Cancelled" then "Canceled" else _, type nullable text}},
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidStatus = Table.SelectRows(NormalizeCanceled, each [ProjectStatus] <> null and [ProjectStatus] <> ""),
+		    DistinctStatus = Table.Distinct(ValidStatus, {"ProjectStatus"}),
+		    SortedStatus = Table.Sort(DistinctStatus, {{"ProjectStatus", Order.Ascending}}),
+		    AddedStatusKey = Table.AddIndexColumn(SortedStatus, "StatusKey", 1, 1, Int64.Type),
+		    AddedIsCompleted = Table.AddColumn(
+		        AddedStatusKey,
 		        "IsCompleted",
 		        each if List.Contains({"Successful", "Failed", "Canceled", "Suspended"}, [ProjectStatus]) then 1 else 0,
 		        Int64.Type
 		    ),
-		    #"Added IsSuccessful" = Table.AddColumn(
-		        #"Added IsCompleted",
+		    AddedIsSuccessful = Table.AddColumn(
+		        AddedIsCompleted,
 		        "IsSuccessful",
 		        each if [ProjectStatus] = "Successful" then 1 else 0,
 		        Int64.Type
 		    ),
-		    #"Added StatusGroup" = Table.AddColumn(
-		        #"Added IsSuccessful",
+		    AddedStatusGroup = Table.AddColumn(
+		        AddedIsSuccessful,
 		        "StatusGroup",
-		        each if [ProjectStatus] = "Successful" then "Funded"
-		             else if [ProjectStatus] = "Live" then "In Progress"
-		             else "Unfunded",
+		        each
+		            if [ProjectStatus] = "Successful" then "Funded"
+		            else if [ProjectStatus] = "Live" then "In Progress"
+		            else if List.Contains({"Failed", "Canceled", "Suspended"}, [ProjectStatus]) then "Unfunded"
+		            else "Unknown / Other",
 		        type text
 		    )
 		in
-		    #"Added StatusGroup"
+		    AddedStatusGroup
 	lineageTag: cd16a37f-ab27-4af0-93b6-abc996dbcf8d
 	queryGroup: 03_Conformed
 
+	annotation PBI_ResultType = Exception
+
 expression Conformed_Location =
 		let
-		    // 1. Extract detailed locations from MasterKickstarter
-		    SourceMaster = Table.SelectColumns(
-		        Stg_MasterKickstarter,
-		        {"CountryName", "State", "County", "City", "Latitude", "Longitude"},
+		    // Build the location dimension from the raw MasterKickstarter source so it does not evaluate
+		    // the full, calculation-heavy Stg_MasterKickstarter query merely to obtain six location fields.
+		    Source = Src_Master,
+		    CleanHeaders = Table.TransformColumnNames(Source, each Text.Trim(Text.Clean(_))),
+		
+		    LocationAliasMap = {
+		        {"CountryName", {"Country", "country", "CountryName"}},
+		        {"CountryCode", {"CountryCode", "country_code", "countrycode"}},
+		        {"StateName", {"State", "state", "StateName"}},
+		        {"CountyName", {"County", "county", "CountyName"}},
+		        {"CityName", {"City", "city", "CityName"}},
+		        {"Latitude", {"latitude", "Latitude"}},
+		        {"Longitude", {"longitude", "Longitude"}}
+		    },
+		
+		    Canonicalized = List.Accumulate(
+		        LocationAliasMap,
+		        CleanHeaders,
+		        (CurrentTable as table, Definition as list) as table =>
+		            let
+		                Target = Definition{0},
+		                Aliases = Definition{1},
+		                Names = Table.ColumnNames(CurrentTable),
+		                AliasToUse = List.First(List.Select(Aliases, each List.Contains(Names, _)), null)
+		            in
+		                if List.Contains(Names, Target) then CurrentTable
+		                else if AliasToUse <> null then Table.RenameColumns(CurrentTable, {{AliasToUse, Target}}, MissingField.Ignore)
+		                else CurrentTable
+		    ),
+		
+		    Selected = Table.SelectColumns(
+		        Canonicalized,
+		        {"CountryCode", "CountryName", "StateName", "CountyName", "CityName", "Latitude", "Longitude"},
+		        MissingField.UseNull
+		    ),
+		
+		    CleanText = (Value as any) as nullable text =>
+		        let T = if Value = null then null else (try Text.Trim(Text.Clean(Text.From(Value))) otherwise null)
+		        in if T = null or T = "" then null else T,
+		
+		    CleanedText = Table.TransformColumns(
+		        Selected,
+		        {
+		            {"CountryCode", each let T = CleanText(_) in if T = null then null else Text.Upper(T), type nullable text},
+		            {"CountryName", each CleanText(_), type nullable text},
+		            {"StateName", each CleanText(_), type nullable text},
+		            {"CountyName", each CleanText(_), type nullable text},
+		            {"CityName", each CleanText(_), type nullable text}
+		        },
+		        null,
 		        MissingField.Ignore
 		    ),
-		    #"Distinct Master" = Table.Distinct(SourceMaster),
 		
-		    // 2. Add LocationKey
-		    #"Sorted" = Table.Sort(#"Distinct Master", {{"CountryName", Order.Ascending}, {"State", Order.Ascending}, {"City", Order.Ascending}}),
-		    #"Added LocationKey" = Table.AddIndexColumn(#"Sorted", "LocationKey", 1, 1, Int64.Type)
+		    CountryLookup = [
+		        USA = "United States", US = "United States",
+		        GBR = "United Kingdom", GB = "United Kingdom",
+		        CAN = "Canada", CA = "Canada",
+		        AUS = "Australia", AU = "Australia",
+		        DEU = "Germany", DE = "Germany",
+		        FRA = "France", FR = "France",
+		        ITA = "Italy", IT = "Italy",
+		        ESP = "Spain", ES = "Spain",
+		        NLD = "Netherlands", NL = "Netherlands",
+		        NZL = "New Zealand", NZ = "New Zealand",
+		        IRL = "Ireland", IE = "Ireland",
+		        SWE = "Sweden", SE = "Sweden",
+		        DNK = "Denmark", DK = "Denmark",
+		        NOR = "Norway", NO = "Norway",
+		        CHE = "Switzerland", CH = "Switzerland",
+		        AUT = "Austria", AT = "Austria",
+		        BEL = "Belgium", BE = "Belgium",
+		        FIN = "Finland", FI = "Finland",
+		        HKG = "Hong Kong", HK = "Hong Kong",
+		        SGP = "Singapore", SG = "Singapore",
+		        MEX = "Mexico", MX = "Mexico",
+		        JPN = "Japan", JP = "Japan",
+		        POL = "Poland", PL = "Poland",
+		        PRT = "Portugal", PT = "Portugal",
+		        BRA = "Brazil", BR = "Brazil",
+		        ARG = "Argentina", AR = "Argentina",
+		        CZE = "Czechia", CZ = "Czechia",
+		        GRC = "Greece", GR = "Greece",
+		        TUR = "Türkiye", TR = "Türkiye",
+		        ZAF = "South Africa", ZA = "South Africa",
+		        CHN = "China", CN = "China",
+		        IND = "India", IN = "India",
+		        RUS = "Russia", RU = "Russia",
+		        UKR = "Ukraine", UA = "Ukraine",
+		        ARE = "United Arab Emirates", AE = "United Arab Emirates",
+		        TWN = "Taiwan", TW = "Taiwan",
+		        THA = "Thailand", TH = "Thailand",
+		        IDN = "Indonesia", ID = "Indonesia",
+		        MYS = "Malaysia", MY = "Malaysia",
+		        PHL = "Philippines", PH = "Philippines",
+		        VNM = "Vietnam", VN = "Vietnam",
+		        COL = "Colombia", CO = "Colombia",
+		        CHL = "Chile", CL = "Chile",
+		        PER = "Peru", PE = "Peru",
+		        EST = "Estonia", EE = "Estonia",
+		        LVA = "Latvia", LV = "Latvia",
+		        LTU = "Lithuania", LT = "Lithuania",
+		        LUX = "Luxembourg", LU = "Luxembourg",
+		        ISL = "Iceland", IS = "Iceland",
+		        ROU = "Romania", RO = "Romania",
+		        HUN = "Hungary", HU = "Hungary",
+		        HRV = "Croatia", HR = "Croatia",
+		        SVK = "Slovakia", SK = "Slovakia",
+		        SVN = "Slovenia", SI = "Slovenia",
+		        BGR = "Bulgaria", BG = "Bulgaria",
+		        CYP = "Cyprus", CY = "Cyprus",
+		        ISR = "Israel", IL = "Israel",
+		        KOR = "South Korea", KR = "South Korea"
+		    ],
+		
+		    AddResolvedCountryCode = Table.AddColumn(
+		        CleanedText,
+		        "__CountryCodeResolved",
+		        each
+		            let
+		                Code = [CountryCode],
+		                NameValue = [CountryName],
+		                NameKey = if NameValue = null then null else Text.Upper(NameValue)
+		            in
+		                if Code <> null and Code <> "" then Code
+		                else if NameKey <> null then
+		                    if Record.HasFields(CountryLookup, NameKey) then NameKey else null
+		                else null,
+		        type nullable text
+		    ),
+		    AddResolvedCountryName = Table.AddColumn(
+		        AddResolvedCountryCode,
+		        "__CountryNameResolved",
+		        each
+		            let
+		                Code = [__CountryCodeResolved],
+		                NameValue = [CountryName],
+		                NameKey = if NameValue = null then null else Text.Upper(NameValue),
+		                FromCode = if Code = null then null else Record.FieldOrDefault(CountryLookup, Code, null),
+		                FromNameCode = if NameKey = null then null else Record.FieldOrDefault(CountryLookup, NameKey, null)
+		            in
+		                if FromCode <> null then FromCode
+		                else if FromNameCode <> null then FromNameCode
+		                else NameValue,
+		        type nullable text
+		    ),
+		    DropOldCountryFields = Table.RemoveColumns(AddResolvedCountryName, {"CountryCode", "CountryName"}, MissingField.Ignore),
+		    RestoreCountryFields = Table.RenameColumns(
+		        DropOldCountryFields,
+		        {{"__CountryCodeResolved", "CountryCode"}, {"__CountryNameResolved", "CountryName"}},
+		        MissingField.Ignore
+		    ),
+		
+		    CleanCoordinates = Table.TransformColumns(
+		        RestoreCountryFields,
+		        {
+		            {"Latitude", each try Number.From(_) otherwise null, type nullable number},
+		            {"Longitude", each try Number.From(_) otherwise null, type nullable number}
+		        },
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidateLatitude = Table.TransformColumns(
+		        CleanCoordinates,
+		        {{"Latitude", each if _ = null or _ < -90 or _ > 90 then null else _, type nullable number}},
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidateLongitude = Table.TransformColumns(
+		        ValidateLatitude,
+		        {{"Longitude", each if _ = null or _ < -180 or _ > 180 then null else _, type nullable number}},
+		        null,
+		        MissingField.Ignore
+		    ),
+		    ValidLocations = Table.SelectRows(
+		        ValidateLongitude,
+		        each [CountryName] <> null or [StateName] <> null or [CountyName] <> null
+		            or [CityName] <> null or [Latitude] <> null or [Longitude] <> null
+		    ),
+		    DistinctLocations = Table.Distinct(ValidLocations, {"CountryCode", "CountryName", "StateName", "CountyName", "CityName", "Latitude", "Longitude"}),
+		    SortedLocations = Table.Sort(
+		        DistinctLocations,
+		        {{"CountryName", Order.Ascending}, {"StateName", Order.Ascending}, {"CountyName", Order.Ascending}, {"CityName", Order.Ascending}}
+		    ),
+		    AddedLocationKey = Table.AddIndexColumn(SortedLocations, "LocationKey", 1, 1, Int64.Type)
 		in
-		    #"Added LocationKey"
+		    AddedLocationKey
 	lineageTag: 26331f49-b738-4e64-bcdf-a9130045ef04
 	queryGroup: 03_Conformed
+
+	annotation PBI_ResultType = Exception
 
